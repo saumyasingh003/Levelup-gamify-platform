@@ -71,7 +71,7 @@ export const register = async (req, res) => {
     });
 
   } catch (error) {
-
+    console.log(error)
     res.status(500).json({
       message: error.message
     });
@@ -112,7 +112,7 @@ export const login = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    console.log("Login Token:", token);
+  
 
     // save cookie
     res.cookie("token", token, {
@@ -135,7 +135,7 @@ export const login = async (req, res) => {
     });
 
   } catch (error) {
-
+    console.log(error)
     res.status(500).json({
       message: error.message
     });
