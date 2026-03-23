@@ -23,7 +23,7 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
     setIsToggling(topicKey);
     try {
       const res = await axios.post(
-        "http://localhost:5000/progress/toggle",
+        "https://levelup-gamify-backend.vercel.app/progress/toggle",
         { level: levelNum, topicIndex: topicIdx },
         { withCredentials: true },
       );

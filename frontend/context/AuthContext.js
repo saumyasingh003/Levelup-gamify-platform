@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/auth/me", {
+      const res = await axios.get("https://levelup-gamify-backend.vercel.app/auth/me", {
         withCredentials: true,
       });
       setUser(res.data);

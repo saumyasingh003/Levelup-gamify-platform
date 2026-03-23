@@ -30,7 +30,7 @@ const Home = () => {
     try {
       setLoadingRoadmap(true);
 
-      const res = await axios.get("http://localhost:5000/roadmap", {
+      const res = await axios.get("https://levelup-gamify-backend.vercel.app/roadmap", {
         withCredentials: true,
       });
 

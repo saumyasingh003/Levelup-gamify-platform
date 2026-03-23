@@ -15,7 +15,7 @@ const Profile = () => {
 
   const fetchProgress = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/progress", {
+      const res = await axios.get("https://levelup-gamify-backend.vercel.app/progress", {
         withCredentials: true,
       });
       setProgress(res.data);
@@ -44,7 +44,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      await axios.put("http://localhost:5000/auth/update-profile", formData, {
+      await axios.put("https://levelup-gamify-backend.vercel.app/auth/update-profile", formData, {
         withCredentials: true,
       });
       toast.success("Profile updated!");

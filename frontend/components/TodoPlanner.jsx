@@ -42,7 +42,7 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/todo/generate",
+        "https://levelup-gamify-backend.vercel.app/todo/generate",
         { planType: type, roadmap: activeLevelData },
         { withCredentials: true }
       );

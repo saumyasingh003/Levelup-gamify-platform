@@ -38,7 +38,7 @@ const CareerPopup = ({
     try {
 
       await axios.post(
-        "http://localhost:5000/progress/career",
+        "https://levelup-gamify-backend.vercel.app/progress/career",
         { career: selectedCareer },
         { withCredentials: true }
       );
