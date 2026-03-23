@@ -8,10 +8,7 @@ import todoRoutes from "./routes/todo.js";
 
 const app = express();
 app.use(
-  cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
-    credentials: true,
-  }),
+  cors(),
 );
 app.use(express.json());
 app.use(cookieParser());
