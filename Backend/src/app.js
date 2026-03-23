@@ -7,9 +7,7 @@ import progressRoutes from "./routes/progress.js";
 import todoRoutes from "./routes/todo.js";
 
 const app = express();
-app.use(
-  cors(),
-);
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
