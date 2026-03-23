@@ -1,23 +1,30 @@
 import mongoose from "mongoose";
 
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
+  if (cached.conn) {
+    return cached.conn; 
+  }
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGO_URI, {
+      bufferCommands: false,
+    });
+  }
+
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    cached.conn = await cached.promise;
     console.log("✅ MongoDB Connected");
+    return cached.conn;
   } catch (error) {
-    console.error("❌ MongoDB Connection Failed:");
-    console.error("Error:", error.message);
-
-    if (
-      error.message.includes("MongooseServerSelectionError") ||
-      error.message.includes("SSL")
-    ) {
-      console.log(
-        "💡 Tip: This is likely an IP Whitelist issue. Go to MongoDB Atlas > Network Access and add your current IP address (or 0.0.0.0/0).",
-      );
-    }
-
-    process.exit(1);
+    console.error("❌ MongoDB Connection Failed:", error.message);
+    cached.promise = null;
+    throw error;
   }
 };
 
