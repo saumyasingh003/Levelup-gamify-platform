@@ -7,7 +7,12 @@ import progressRoutes from "./routes/progress.js";
 import todoRoutes from "./routes/todo.js";
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "http://localhost:3001", "https://levelup-gamify-frontend.vercel.app"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
