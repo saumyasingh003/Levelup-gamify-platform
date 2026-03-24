@@ -9,12 +9,19 @@ import todoRoutes from "./routes/todo.js";
 const app = express();
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000", 
-      "http://localhost:3001", 
-      "https://levelup-gamify-frontend.vercel.app",
-      "https://levelup-gamify-platform.vercel.app"
-    ],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:3000", 
+        "http://localhost:3001",
+        "https://levelup-gamify-frontend.vercel.app",
+        "https://levelup-gamify-platform.vercel.app"
+      ];
+      if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
