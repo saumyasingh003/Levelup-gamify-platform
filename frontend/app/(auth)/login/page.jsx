@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import axios from "axios";
+import api from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
@@ -33,11 +33,7 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const res = await axios.post(
-        "https://levelup-gamify-backend.vercel.app/auth/login",
-        formData,
-        { withCredentials: true },
-      );
+      const res = await api.post("/auth/login", formData);
 
       login(res.data.user);
       toast.success(res.data.message);

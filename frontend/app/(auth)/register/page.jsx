@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import axios from "axios";
+import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -35,11 +35,7 @@ const Register = () => {
     e.preventDefault();
 
     try {
-      const res = await axios.post(
-        "https://levelup-gamify-backend.vercel.app/auth/register",
-        formData,
-        { withCredentials: true },
-      );
+      const res = await api.post("/auth/register", formData);
 
       toast.success(res.data.message);
 

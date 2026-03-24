@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import { Pencil, Flame, Award, Zap, Brain } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -15,7 +15,7 @@ const Profile = () => {
 
   const fetchProgress = async () => {
     try {
-      const res = await axios.get("https://levelup-gamify-backend.vercel.app/progress", {
+      const res = await axios.get(`${API_URL}/progress`, {
         withCredentials: true,
       });
       setProgress(res.data);
@@ -44,9 +44,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      await axios.put("https://levelup-gamify-backend.vercel.app/auth/update-profile", formData, {
-        withCredentials: true,
-      });
+      await api.put("/auth/update-profile", formData);
       toast.success("Profile updated!");
       await checkAuth();
       setIsEditing(false);

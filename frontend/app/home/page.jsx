@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 
 import InfoCards from "@/components/InfoCards";
 import CareerPopup from "@/components/CareerPopup";
@@ -30,9 +30,7 @@ const Home = () => {
     try {
       setLoadingRoadmap(true);
 
-      const res = await axios.get("https://levelup-gamify-backend.vercel.app/roadmap", {
-        withCredentials: true,
-      });
+      const res = await api.get("/roadmap");
 
       setRoadmap(res.data.roadmap);
       setCareer(res.data.progress?.career);

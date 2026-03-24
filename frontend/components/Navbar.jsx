@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import toast from "react-hot-toast";
-import axios from "axios";
+import api from "@/lib/api";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -23,11 +23,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      const res = await axios.post(
-        "https://levelup-gamify-backend.vercel.app/auth/logout",
-        {},
-        { withCredentials: true },
-      );
+      const res = await api.post("/auth/logout", {});
 
       toast.success(res.data.message);
       logout();

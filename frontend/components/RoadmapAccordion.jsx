@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import axios from "axios";
+import api from "@/lib/api";
 import { CheckCircle2, Circle, PartyPopper, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -22,11 +22,10 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
     const topicKey = `${levelNum}-${topicIdx}`;
     setIsToggling(topicKey);
     try {
-      const res = await axios.post(
-        "https://levelup-gamify-backend.vercel.app/progress/toggle",
-        { level: levelNum, topicIndex: topicIdx },
-        { withCredentials: true },
-      );
+      const res = await api.post("/progress/toggle", {
+        level: levelNum,
+        topicIndex: topicIdx,
+      });
 
       const updatedProgress = res.data?.progress;
 

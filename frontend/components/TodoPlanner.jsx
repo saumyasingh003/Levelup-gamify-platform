@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import {
   Calendar,
   ChevronLeft,
@@ -41,11 +41,10 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
     );
 
     try {
-      const res = await axios.post(
-        "https://levelup-gamify-backend.vercel.app/todo/generate",
-        { planType: type, roadmap: activeLevelData },
-        { withCredentials: true }
-      );
+      const res = await api.post("/todo/generate", {
+        planType: type,
+        roadmap: activeLevelData,
+      });
       setPlan(res.data.plan);
     } catch (err) {
       console.error(err);

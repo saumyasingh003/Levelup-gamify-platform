@@ -9,7 +9,12 @@ import todoRoutes from "./routes/todo.js";
 const app = express();
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "https://levelup-gamify-frontend.vercel.app"],
+    origin: [
+      "http://localhost:3000", 
+      "http://localhost:3001", 
+      "https://levelup-gamify-frontend.vercel.app",
+      "https://levelup-gamify-platform.vercel.app"
+    ],
     credentials: true,
   }),
 );

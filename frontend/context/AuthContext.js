@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 
 const AuthContext = createContext();
 
@@ -11,9 +11,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const res = await axios.get("https://levelup-gamify-backend.vercel.app/auth/me", {
-        withCredentials: true,
-      });
+      const res = await api.get("/auth/me");
       setUser(res.data);
     } catch (error) {
       setUser(null);

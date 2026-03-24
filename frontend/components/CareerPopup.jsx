@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import toast from "react-hot-toast";
 import { X } from "lucide-react";
 
@@ -37,11 +37,7 @@ const CareerPopup = ({
 
     try {
 
-      await axios.post(
-        "https://levelup-gamify-backend.vercel.app/progress/career",
-        { career: selectedCareer },
-        { withCredentials: true }
-      );
+      await api.post("/progress/career", { career: selectedCareer });
 
       toast.success("Career path selected!");
 
