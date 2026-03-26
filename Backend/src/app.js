@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.js";
 import roadmapRoutes from "./routes/roadmap.js";
 import progressRoutes from "./routes/progress.js";
 import todoRoutes from "./routes/todo.js";
+import communityRoutes from "./routes/community.js";
 
 const app = express();
 app.use(
@@ -32,5 +33,16 @@ app.use("/auth", authRoutes);
 app.use("/progress", progressRoutes);
 app.use("/roadmap", roadmapRoutes);
 app.use("/todo", todoRoutes);
+app.use("/community", communityRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("🔥 GLOBAL ERROR:", err);
+  res.status(500).json({
+    message: "Internal Server Error",
+    error: err.message,
+    stack: err.stack,
+  });
+});
 
 export default app;

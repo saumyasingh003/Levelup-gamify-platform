@@ -17,12 +17,14 @@ const Home = () => {
   const [roadmap, setRoadmap] = useState(null);
   const [career, setCareer] = useState(null);
   const [currentLevel, setCurrentLevel] = useState(1);
+  const [activeLevel, setActiveLevel] = useState(1); // the level currently open/selected for tasks
   const [progress, setProgress] = useState(null);
 
   const handleProgressUpdate = (updatedProgress) => {
     if (!updatedProgress) return;
     setCareer(updatedProgress.career);
     setCurrentLevel(updatedProgress.level ?? 1);
+    setActiveLevel(updatedProgress.level ?? 1);
     setProgress(updatedProgress);
   };
 
@@ -34,7 +36,9 @@ const Home = () => {
 
       setRoadmap(res.data.roadmap);
       setCareer(res.data.progress?.career);
-      setCurrentLevel(res.data.progress?.level || 1);
+      const lvl = res.data.progress?.level || 1;
+      setCurrentLevel(lvl);
+      setActiveLevel(lvl);
       setProgress(res.data.progress);
 
       setLoadingRoadmap(false);
@@ -50,25 +54,25 @@ const Home = () => {
 
   return (
     <ProtectedRoute>
-      <div className="w-full px-6 md:px-12 pt-8">
+      <div className="w-full px-6 md:px-12 lg:px-20 py-12">
 
         {/* TOP SECTION */}
-        <div className="flex flex-col lg:flex-row gap-10">
+        <div className="flex flex-col lg:flex-row gap-12 items-center mb-16">
 
           {/* LEFT */}
           <div className="flex-1">
-            <h1 className="text-3xl md:text-4xl font-bold text-black">
-              Your Learning Journey Starts Here
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-black leading-tight">
+              Master Your Learning Journey
             </h1>
 
-            <p className="mt-4 text-gray-600">
-              Master your career path, earn XP, and level up your skills.
+            <p className="mt-4 text-base text-gray-500 max-w-lg leading-relaxed">
+              Unlock your career path, complete structured roadmaps, earn XP, and level up your skills with AI-powered precision.
             </p>
 
             {!roadmap && !loadingRoadmap && (
               <Button
                 onClick={() => setOpenPopup(true)}
-                className="mt-6 px-6 py-3"
+                className="mt-6 px-6 py-2.5 rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 transition-colors"
               >
                 Start Learning
               </Button>
@@ -76,7 +80,7 @@ const Home = () => {
           </div>
 
           {/* RIGHT */}
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             <InfoCards progress={progress} />
           </div>
         </div>
@@ -94,13 +98,15 @@ const Home = () => {
                 roadmap={roadmap} 
                 career={career} 
                 progress={progress} 
+                activeLevel={activeLevel}
+                setActiveLevel={setActiveLevel}
                 onUpdate={handleProgressUpdate} 
               />
             </div>
 
             {/* TODO */}
             <div className="w-full lg:w-1/2 sticky top-6">
-              <TodoPlanner roadmap={roadmap} currentLevel={currentLevel} />
+              <TodoPlanner roadmap={roadmap} currentLevel={activeLevel} />
             </div>
 
           </div>

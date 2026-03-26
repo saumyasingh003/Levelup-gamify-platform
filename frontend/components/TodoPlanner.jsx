@@ -14,8 +14,9 @@ import {
   ChevronUp,
   ExternalLink,
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
-const TodoPlanner = ({ roadmap, currentLevel }) => {
+const TodoPlanner = ({ roadmap, currentLevel, progress }) => {
   const [step, setStep] = useState("ask");
   const [planType, setPlanType] = useState(null);
   const [plan, setPlan] = useState(null);
@@ -36,18 +37,37 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
     setChecked({});
     setShowAdvice(false);
 
-    const activeLevelData = roadmap?.filter(
-      (lvl) => lvl.level === currentLevel
+    const levelData = roadmap?.find((lvl) => lvl.level === currentLevel);
+    if (!levelData) {
+      setLoading(false);
+      toast("Please open a level in the roadmap first!");
+      setStep("ask");
+      return;
+    }
+
+    // Filter out topics already completed in this level
+    const uncompletedTopics = levelData.topics.filter(
+      (_, i) => !progress?.completedTopics?.includes(`${currentLevel}-${i}`)
     );
+
+    if (uncompletedTopics.length === 0) {
+      setLoading(false);
+      toast.success("Level completed! Generate a plan for the next level.");
+      setStep("ask");
+      return;
+    }
+
+    const filteredRoadmap = [{ ...levelData, topics: uncompletedTopics }];
 
     try {
       const res = await api.post("/todo/generate", {
         planType: type,
-        roadmap: activeLevelData,
+        roadmap: filteredRoadmap,
       });
       setPlan(res.data.plan);
     } catch (err) {
       console.error(err);
+      toast.error(`Error: ${err.response?.data?.error || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -59,22 +79,34 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
     const isDone = checked[key];
 
     return (
-      <div className="flex gap-3 p-3 border rounded-md">
-        <button onClick={() => toggleCheck(key)}>
+      <div className="group flex gap-3 py-3 border-b border-gray-100 last:border-0">
+        <button 
+          onClick={() => toggleCheck(key)}
+          className="mt-0.5 shrink-0"
+        >
           {isDone ? (
-            <CheckCircle2 className="w-5 h-5 text-black" />
+            <CheckCircle2 className="w-4 h-4 text-black" />
           ) : (
-            <Circle className="w-5 h-5 text-gray-400 hover:text-black" />
+            <Circle className="w-4 h-4 text-gray-300 group-hover:text-black transition-colors" />
           )}
         </button>
 
-        <div>
-          <p className={`${isDone ? "line-through text-gray-400" : ""}`}>
+        <div className="flex-1">
+          <p className={`text-sm transition-colors ${isDone ? "line-through text-gray-400" : "text-gray-800"}`}>
             {task.task}
           </p>
-          <span className="text-xs text-gray-500 flex gap-1 mt-1">
-            <Clock className="w-3 h-3" /> {task.duration}
-          </span>
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+            <span className="text-[11px] font-medium text-gray-500 flex items-center gap-1">
+              <Clock className="w-3 h-3" /> 
+              {task.duration}
+            </span>
+          </div>
+          {task.tip && !isDone && (
+            <div className="mt-2 text-[11px] text-gray-500 flex gap-1.5 items-start">
+              <span>↳</span>
+              <span>{task.tip}</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -87,49 +119,52 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
 
       {/* STEP 1 */}
       {step === "ask" && (
-        <div className="mt-11  bg-white border rounded-2xl p-6 flex justify-between">
-          <div className="border-l-4 border-black pl-4">
-            <h2 className="text-lg font-semibold mt-8 ">Plan Your Learning</h2>
-            <p className="text-sm text-gray-500">
-            Generate your structured learning plan
+        <div className="bg-black rounded-lg p-6 flex justify-between shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+          <div className="relative z-10">
+            <h2 className="text-xl font-bold text-white tracking-tight">AI Study Dashboard</h2>
+            <p className="text-sm text-gray-400 mt-1 max-w-sm">
+              Generate a highly-focused learning plan based on your roadmap.
             </p>
 
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setStep("choose")}
-                className="bg-black text-white px-4 py-2 rounded-md"
+                className="bg-white text-black px-5 py-2 rounded-md text-sm font-bold hover:bg-gray-100 transition-colors"
               >
-                Generate
+                Generate Plan
               </button>
 
               <button
                 onClick={() => setStep("hide")}
-                className="border px-4 py-2 rounded-md"
+                className="px-5 py-2 rounded-md text-sm font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
               >
-                Later
+                Dismiss
               </button>
             </div>
           </div>
-
-          <img src="/planner.png" className="w-48 mr-10" />
         </div>
       )}
 
       {/* STEP 2 */}
       {step === "choose" && (
-        <div className="mt-11 bg-white border rounded-2xl p-5">
-          <button onClick={() => setStep("ask")} className="text-xs mb-4 flex gap-1">
-            <ChevronLeft className="w-4 h-4" /> Back
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <button 
+            onClick={() => setStep("ask")} 
+            className="text-sm font-medium text-gray-500 mb-6 flex items-center hover:text-black transition-colors"
+          >
+            ← Back
           </button>
+          
+          <h3 className="text-lg font-semibold text-black mb-4">Select plan type</h3>
 
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             {["daily", "weekly"].map((type) => (
               <button
                 key={type}
                 onClick={() => handleGenerate(type)}
-                className="flex-1 py-2 bg-gray-100 rounded-md hover:bg-black hover:text-white"
+                className="flex-1 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium text-gray-600 capitalize hover:border-black hover:text-black transition-colors"
               >
-                {type}
+                {type} Plan
               </button>
             ))}
           </div>
@@ -138,18 +173,21 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
 
       {/* STEP 3 */}
       {step === "show" && (
-        <div className="mt-11 mb-8  bg-white border rounded-2xl p-5">
+        <div className="mb-6 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
 
           {/* HEADER */}
-          <div className="flex justify-between mb-4">
-            <h2 className="font-semibold capitalize">{planType} Plan</h2>
+          <div className="flex justify-between items-end mb-6 border-b-2 border-black pb-3">
+            <div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Generated Plan</p>
+              <h2 className="text-2xl font-bold tracking-tight capitalize text-black">{planType} Plan</h2>
+            </div>
 
             {!loading && (
               <button
                 onClick={() => setStep("choose")}
-                className="bg-gray-700 text-white px-3 py-1 rounded-md text-xs"
+                className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-black transition-colors"
               >
-                Change
+                Reset
               </button>
             )}
           </div>
@@ -163,37 +201,38 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
 
           {/* DAILY */}
           {!loading &&
-            plan?.planType === "daily" &&
-            plan.tasks?.map((task, i) => (
-              <TaskCard key={i} task={task} index={i} prefix="d" />
-            ))}
+            plan?.planType === "daily" && (
+              <div className="flex flex-col">
+                {plan.tasks?.map((task, i) => (
+                  <TaskCard key={i} task={task} index={i} prefix="d" />
+                ))}
+              </div>
+            )}
 
           {/* WEEKLY ACCORDION */}
           {!loading && plan?.planType === "weekly" && (
-            <div className="space-y-3">
+            <div className="flex flex-col">
 
               {plan.days?.map((day, i) => (
-                <div key={i} className="border rounded-lg">
+                <div key={i} className={`border-b border-gray-100 last:border-0 transition-all duration-300 ${openDay === i ? "border-l-4 border-l-black pl-3" : "pl-0"}`}>
 
                   {/* HEADER */}
                   <button
-                    onClick={() =>
-                      setOpenDay(openDay === i ? null : i)
-                    }
-                    className="w-full flex justify-between items-center px-4 py-3 text-left"
+                    onClick={() => setOpenDay(openDay === i ? null : i)}
+                    className="w-full flex justify-between items-center py-4 text-left transition-colors group"
                   >
-                    <span className="font-medium">{day.day}</span>
+                    <span className={`text-sm font-bold ${openDay === i ? "text-black" : "text-gray-700 group-hover:text-black"}`}>{day.day}</span>
 
                     {openDay === i ? (
-                      <ChevronUp className="w-4 h-4" />
+                      <ChevronUp className="w-4 h-4 text-black" />
                     ) : (
-                      <ChevronDown className="w-4 h-4" />
+                      <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-black" />
                     )}
                   </button>
 
                   {/* CONTENT */}
                   {openDay === i && (
-                    <div className="px-4 pb-3 space-y-2">
+                    <div className="pb-4 pt-1">
                       {day.tasks?.map((task, j) => (
                         <TaskCard
                           key={j}
@@ -209,36 +248,39 @@ const TodoPlanner = ({ roadmap, currentLevel }) => {
 
               {/* AI TIPS BELOW WEEKLY */}
               {plan.advice && (
-                <div className="mt-6">
+                <div className="mt-8 pt-6 border-t border-gray-100">
 
                   <button
                     onClick={() => setShowAdvice(!showAdvice)}
-                    className="w-full bg-black text-white py-2 rounded-md text-sm"
+                    className="text-xs font-medium text-gray-500 hover:text-black transition-colors"
                   >
-                    {showAdvice ? "Hide Tips" : "Show Tips & Resources"}
+                    {showAdvice ? "Hide AI Insights" : "Show AI Insights"}
                   </button>
 
                   {showAdvice && (
-                    <div className="mt-4 border rounded-lg p-4 bg-gray-50">
-
+                    <div className="mt-4 pb-2">
+                      
                       {/* TIPS */}
-                      {plan.advice.general_tips?.map((tip, i) => (
-                        <p key={i} className="text-sm mb-2">
-                          • {tip}
-                        </p>
-                      ))}
+                      <div className="space-y-2 mb-6 text-sm text-gray-600">
+                        {plan.advice.general_tips?.map((tip, i) => (
+                          <div key={i} className="flex gap-2.5">
+                            <span className="text-gray-400">-</span>
+                            <p>{tip}</p>
+                          </div>
+                        ))}
+                      </div>
 
                       {/* RESOURCES */}
-                      <div className="mt-4 space-y-2">
+                      <h4 className="text-xs font-medium text-gray-900 mb-3">Resources</h4>
+                      <div className="flex flex-col gap-2">
                         {plan.advice.resources?.map((res, i) => (
                           <a
                             key={i}
                             href={res.url}
                             target="_blank"
-                            className="flex justify-between border p-2 rounded-md text-sm hover:bg-white"
+                            className="text-sm text-gray-600 hover:text-black underline decoration-gray-200 hover:decoration-black transition-colors inline-flex w-fit"
                           >
-                            <span>{res.name}</span>
-                            <ExternalLink className="w-4 h-4" />
+                            {res.name}
                           </a>
                         ))}
                       </div>

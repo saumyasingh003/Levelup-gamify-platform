@@ -8,17 +8,28 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import api from "@/lib/api";
-import { CheckCircle2, Circle, PartyPopper, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, PartyPopper, Loader2, Lock } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
+const RoadmapAccordion = ({ 
+  roadmap = [], 
+  career, 
+  progress, 
+  onUpdate,
+  activeLevel,
+  setActiveLevel 
+}) => {
   const [showAllLevels, setShowAllLevels] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpData, setLevelUpData] = useState(null);
-  const [openLevel, setOpenLevel] = useState(null);
   const [isToggling, setIsToggling] = useState(null); // track which topic is being toggled
 
   const toggleTopic = async (levelNum, topicIdx) => {
+    if (levelNum > (progress?.level || 1)) {
+      toast.error("Complete previous levels to unlock this one!");
+      return;
+    }
+
     const topicKey = `${levelNum}-${topicIdx}`;
     setIsToggling(topicKey);
     try {
@@ -36,7 +47,7 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
         });
         setShowLevelUp(true);
         if (!res.data.isFinal) {
-          setOpenLevel(String(res.data.progress.level));
+          setActiveLevel(res.data.progress.level);
         }
         setTimeout(() => setShowLevelUp(false), 4000);
       }
@@ -59,19 +70,12 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
 
   const visibleLevels = showAllLevels ? roadmap : roadmap.slice(0, 3);
 
-  // Auto-open current level on load or level change
-  useEffect(() => {
-    if (progress?.level != null) {
-      setOpenLevel(String(progress.level));
-    }
-  }, [progress?.level]);
-
   return (
     <div className="w-full text-left">
       {/* HEADER */}
-      <div className="mb-5 flex items-center gap-2">
-        <h2 className="text-2xl font-bold text-black">Career Path:</h2>
-        <p className="text-gray-800 text-lg">
+      <div className="mb-4">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Career Path</h2>
+        <p className="text-lg font-medium text-black">
           {careerLabels[career] || career}
         </p>
       </div>
@@ -80,9 +84,11 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
       <Accordion
         type="single"
         collapsible
-        className="space-y-3"
-        value={openLevel ?? ""}
-        onValueChange={(val) => setOpenLevel(val === "" ? null : String(val))}
+        className="space-y-0"
+        value={activeLevel ? String(activeLevel) : ""}
+        onValueChange={(val) => {
+          setActiveLevel(val === "" ? null : Number(val));
+        }}
       >
         {visibleLevels.map((level) => {
           const total = level.topics.length;
@@ -90,34 +96,60 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
             progress?.completedTopics?.includes(`${level.level}-${i}`),
           ).length;
           const progressPercent = Math.round((done / total) * 100) || 0;
+          const isLocked = level.level > (progress?.level || 1);
+          const isOpen = String(activeLevel) === String(level.level);
 
           return (
             <AccordionItem
               key={level.level}
               value={String(level.level)}
-              className="border border-black/10 rounded-lg overflow-hidden"
+              disabled={isLocked}
+              className={`border-b border-gray-200 transition-all duration-300 ${
+                isLocked ? "opacity-50" : isOpen ? "border-l-4 border-l-black pl-3" : "pl-0"
+              }`}
             >
-              <AccordionTrigger className="bg-black text-white px-4 py-3 text-sm font-semibold flex flex-col items-start gap-1">
-                <div className="flex justify-between w-full">
-                  <span>
-                    Level {level.level} — {level.title}
-                  </span>
+              <AccordionTrigger 
+                className={`py-4 w-full flex flex-col items-start gap-3 hover:no-underline ${
+                  isLocked ? "cursor-not-allowed" : ""
+                }`}
+              >
+                <div className="flex justify-between w-full items-center">
+                  <div className="flex items-center gap-3">
+                    {isLocked ? (
+                      <div className="p-1.5 bg-gray-100 rounded-md">
+                        <Lock className="w-4 h-4 text-gray-400" />
+                      </div>
+                    ) : (
+                      <div className="p-1.5 bg-black rounded-md">
+                        <span className="text-xs font-bold text-white w-4 block text-center">
+                          L{level.level}
+                        </span>
+                      </div>
+                    )}
+                    <span className={`font-semibold tracking-tight text-left ${isOpen ? "text-black" : "text-gray-900 hover:text-black transition-colors"}`}>
+                      {level.title}
+                    </span>
+                  </div>
 
-                  <span className="text-xs text-gray-300">
-                    {progressPercent}%
-                  </span>
+                  {!isLocked && (
+                    <span className={`text-xs font-bold ${isOpen ? "text-black" : "text-gray-400"}`}>
+                      {progressPercent}%
+                    </span>
+                  )}
                 </div>
 
-                <div className="w-full h-0.5 bg-white/20">
-                  <div
-                    className="h-0.5 bg-white transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+                {!isLocked && (
+                  <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden mt-1">
+                    <div
+                      className="h-full bg-black transition-all duration-500 ease-out"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                )}
               </AccordionTrigger>
 
-              <AccordionContent className="bg-gray-50 px-4 py-3">
-                <div className="space-y-2">
+              <AccordionContent className="pb-4 pt-1">
+                <div className="space-y-2 pl-7">
                   {level.topics.map((topic, index) => {
                     const key = `${level.level}-${index}`;
                     const isDone = progress?.completedTopics?.includes(key);
@@ -128,23 +160,23 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
                         onClick={() =>
                           !isToggling && toggleTopic(level.level, index)
                         }
-                        className={`flex items-center gap-2 cursor-pointer transition-opacity ${
+                        className={`group flex items-center gap-3 py-1 cursor-pointer transition-opacity ${
                           isToggling === key ? "opacity-50" : "opacity-100"
                         }`}
                       >
                         {isToggling === key ? (
-                          <Loader2 className="w-4 h-4 text-black animate-spin" />
+                          <Loader2 className="w-4 h-4 text-black animate-spin shrink-0" />
                         ) : isDone ? (
-                          <CheckCircle2 className="w-4 h-4 text-black animate-in zoom-in duration-300" />
+                          <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
                         ) : (
-                          <Circle className="w-4 h-4 text-gray-400" />
+                          <Circle className="w-4 h-4 text-gray-300 group-hover:text-black transition-colors shrink-0" />
                         )}
 
                         <span
                           className={`text-sm ${
                             isDone
                               ? "line-through text-gray-400"
-                              : "text-gray-700"
+                              : "text-gray-600 group-hover:text-black transition-colors"
                           }`}
                         >
                           {topic}
@@ -163,7 +195,7 @@ const RoadmapAccordion = ({ roadmap = [], career, progress, onUpdate }) => {
       {roadmap.length > 3 && (
         <button
           onClick={() => setShowAllLevels((prev) => !prev)}
-          className="mt-5 mb-4 px-4 py-2 rounded-md text-sm bg-gray-100 border border-gray-200 hover:bg-gray-200 transition"
+          className="mt-6 text-sm font-medium text-gray-500 hover:text-black transition-colors"
         >
           {showAllLevels ? "Show Less" : "Show More Levels"}
         </button>

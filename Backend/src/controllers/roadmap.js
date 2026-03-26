@@ -46,17 +46,12 @@ export const getUserRoadmap = async (req, res) => {
           ).join(", ")}`,
         });
       }
-
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
-      });
-
       const levelList = levels
         .map((title, index) => `${index + 1}. ${title}`)
         .join("\n");
 
       const prompt = `
-Generate learning subtopics for the following roadmap.
+Generate learning subtopics for the following roadmap in VALID JSON.
 Career: ${careerTitle}
 
 Levels and titles to expand:
@@ -64,7 +59,7 @@ ${levelList}
 
 Requirements:
 - Each level must have exactly 5 subtopics in the "topics" array.
-- Return ONLY a valid JSON object. No other text or markdown blocks.
+- Return ONLY a valid JSON object. No markdown blocks.
 
 Format:
 {
@@ -78,16 +73,33 @@ Format:
 }
 `;
 
-      const result = await model.generateContent(prompt);
+      const modelNames = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash", "gemini-1.5-flash"];
+      let result;
+      let lastError;
+
+      for (const modelName of modelNames) {
+        try {
+          console.log(`🤖 Roadmap Generation: Attempting ${modelName}...`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          result = await model.generateContent(prompt);
+          if (result) break;
+        } catch (err) {
+          lastError = err;
+          console.warn(`⚠️ ${modelName} failed: ${err.message}`);
+        }
+      }
+
+      if (!result) throw lastError || new Error("All roadmap models failed.");
 
       let text = result.response.text();
 
-      text = text
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
-        .trim();
+      // Advanced JSON Extraction
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+         throw new Error("No valid JSON found in AI response");
+      }
 
-      const roadmapJSON = JSON.parse(text);
+      const roadmapJSON = JSON.parse(jsonMatch[0]);
 
       const savedLevels = [];
 

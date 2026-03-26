@@ -22,13 +22,16 @@ export const generateTodoPlan = async (req, res) => {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Build a summary of all levels and their subtopics (usually just 1 level passed now)
-    const roadmapSummary = roadmap
+    const roadmapSummary = (roadmap || [])
       .map(
         (level) =>
-          `Level ${level.level} — ${level.title}:\n  Subtopics: ${level.topics.join(", ")}`
+          `Level ${level.level} — ${level.title}:\n  Subtopics: ${
+            Array.isArray(level.topics) 
+              ? level.topics.filter(t => typeof t === "string").join(", ") 
+              : "No topics provided"
+          }`
       )
       .join("\n\n");
 
@@ -45,7 +48,7 @@ export const generateTodoPlan = async (req, res) => {
     };
 
     const prompt = `
-You are an expert learning coach and study planner. Your job is to create a highly actionable, structured study plan.
+You are an expert learning coach and study planner. Your job is to create a highly actionable, structured study plan in VALID JSON.
 
 ${planInstructions[planType]}
 
@@ -63,7 +66,7 @@ IMPORTANT REQUIREMENTS:
    - "general_tips": An array of 3–4 general productivity/learning tips
    - "resources": An array of 3–5 recommended resources with "name", "url", and "type" (video/article/course/tool)
 
-Return ONLY valid JSON, no markdown, no extra text.
+Return ONLY valid JSON. No markdown backticks.
 
 ${planType === "daily" ? `
 Format:
@@ -109,16 +112,33 @@ Format:
 }` : ""}
 `;
 
-    const result = await model.generateContent(prompt);
+    const modelNames = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash", "gemini-1.5-flash"];
+    let result;
+    let lastError;
+
+    for (const modelName of modelNames) {
+      try {
+        console.log(`🤖 Attempting generation with ${modelName}...`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        result = await model.generateContent(prompt);
+        if (result) break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`⚠️ ${modelName} failed: ${err.message}`);
+      }
+    }
+
+    if (!result) throw lastError || new Error("All Gemini models failed to generate content.");
+    
     let text = result.response.text();
 
-    // Clean up any markdown formatting
-    text = text
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
-
-    const todoPlan = JSON.parse(text);
+    // Advanced JSON Extraction
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+       throw new Error("No valid JSON found in AI response");
+    }
+    
+    const todoPlan = JSON.parse(jsonMatch[0]);
 
     res.json({ plan: todoPlan });
   } catch (error) {
@@ -126,6 +146,7 @@ Format:
     res.status(500).json({
       message: "Failed to generate todo plan",
       error: error.message,
+      stack: error.stack // Debugging
     });
   }
 };
