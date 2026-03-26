@@ -67,6 +67,20 @@ io.on("connection", (socket) => {
     io.to(channelId).emit("receive_message", enrichedMsg);
   });
 
+  // Handle updating messages
+  socket.on("update_message", ({ channelId, messageId, newText }) => {
+    if (chatHistory[channelId]) {
+      const msg = chatHistory[channelId].find(m => m.id === messageId);
+      if (msg) {
+        msg.text = newText;
+        msg.isEdited = true;
+        
+        // Broadcast the update to everyone in the room
+        io.to(channelId).emit("message_updated", { messageId, newText });
+      }
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log(`🔌 Client disconnected: ${socket.id}`);
   });

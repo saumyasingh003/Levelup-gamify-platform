@@ -15,7 +15,8 @@ import {
   Users,
   Search,
   Trophy,
-  Medal
+  Medal,
+  Edit2
 } from "lucide-react";
 
 // Mock data
@@ -35,6 +36,8 @@ const Dashboard = () => {
   const [activeChannel, setActiveChannel] = useState(CHANNELS[0].id);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [editingMsgId, setEditingMsgId] = useState(null);
+  const [editMessageText, setEditMessageText] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   
@@ -72,6 +75,10 @@ const Dashboard = () => {
       setMessages(history);
     });
 
+    socketRef.current.on("message_updated", ({ messageId, newText }) => {
+      setMessages((prev) => prev.map(m => m.id === messageId ? { ...m, text: newText, isEdited: true } : m));
+    });
+
     return () => {
       socketRef.current.disconnect();
     };
@@ -105,6 +112,18 @@ const Dashboard = () => {
     });
 
     setMessage("");
+  };
+
+  const handleSaveEdit = (msgId) => {
+    if(!editMessageText.trim()) return;
+
+    socketRef.current.emit("update_message", {
+      channelId: activeChannel,
+      messageId: msgId,
+      newText: editMessageText
+    });
+
+    setEditingMsgId(null);
   };
 
   const currentChannel = CHANNELS.find(c => c.id === activeChannel);
@@ -222,19 +241,55 @@ const Dashboard = () => {
                 </div>
 
                 {/* CONTENT */}
-                <div className="flex flex-col">
+                <div className="flex flex-col flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="font-semibold text-sm text-black hover:underline cursor-pointer">
                       {msg.user}
                     </span>
                     <span className="text-[10px] font-medium text-gray-400">
-                      {msg.time}
+                      {msg.time} {msg.isEdited && <span className="italic ml-1">(edited)</span>}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed max-w-3xl">
-                    {msg.text}
-                  </p>
+                  
+                  {editingMsgId === msg.id ? (
+                    <div className="mt-1 flex flex-col gap-2 w-full max-w-3xl">
+                       <input 
+                         type="text"
+                         value={editMessageText}
+                         onChange={(e) => setEditMessageText(e.target.value)}
+                         className="text-sm border border-gray-300 rounded px-3 py-1.5 w-full focus:outline-none focus:border-black bg-gray-50 text-black"
+                         placeholder="Edit your message"
+                         onKeyDown={(e) => {
+                           if(e.key === 'Enter') handleSaveEdit(msg.id)
+                           if(e.key === 'Escape') setEditingMsgId(null)
+                         }}
+                         autoFocus
+                       />
+                       <div className="flex gap-3 text-[10px] uppercase font-bold text-gray-400 mt-1">
+                         <button onClick={() => setEditingMsgId(null)} className="hover:text-black transition-colors">Cancel</button>
+                         <button onClick={() => handleSaveEdit(msg.id)} className="text-black hover:text-opacity-70 transition-colors">Save</button>
+                       </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 leading-relaxed max-w-3xl wrap-break-word">
+                      {msg.text}
+                    </p>
+                  )}
                 </div>
+
+                {/* EDIT BUTTON (Only for the message author) */}
+                {msg.user === (user?.name || user?.username || "User") && editingMsgId !== msg.id && (
+                  <button 
+                    onClick={() => {
+                      setEditingMsgId(msg.id);
+                      setEditMessageText(msg.text);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-gray-400 hover:text-black shrink-0 self-start mt-0.5 rounded-md hover:bg-gray-100"
+                    title="Edit message"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
