@@ -18,9 +18,12 @@ import {
   Medal
 } from "lucide-react";
 
-// Single unified global chat
+// Mock data
 const CHANNELS = [
-  { id: "global", name: "Global Community Chat", members: 4790 },
+  { id: "sd", name: "Software Development", members: 1240 },
+  { id: "ai", name: "AI & ML", members: 980 },
+  { id: "devops", name: "DevOps", members: 450 },
+  { id: "cp", name: "Competitive Programming", members: 2100 },
 ];
 
 const INITIAL_MESSAGES = [];
@@ -90,10 +93,15 @@ const Dashboard = () => {
   const handleSendMessage = () => {
     if (!message.trim() || !user) return;
     
+    const msgData = {
+      user: user.name || user.username || "User",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text: message,
+    };
+
     socketRef.current.emit("send_message", {
       channelId: activeChannel,
-      userId: user.id || user._id,
-      text: message
+      messageData: msgData
     });
 
     setMessage("");

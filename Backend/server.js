@@ -5,7 +5,6 @@ import http from "http";
 import app from "./src/app.js";
 import connectDB from "./src/config/db.js";
 import { Server } from "socket.io";
-import Message from "./src/models/message.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -26,61 +25,46 @@ const io = new Server(server, {
   }
 });
 
+// Ephemeral in-memory chat history per channel (keeps last 50 msgs)
+const chatHistory = {
+  "sd": [],
+  "ai": [],
+  "devops": [],
+  "cp": []
+};
+
 // Socket logic
 io.on("connection", (socket) => {
   console.log(`🔌 Client connected: ${socket.id}`);
 
   // Join a specific channel
-  socket.on("join_channel", async (channelId) => {
+  socket.on("join_channel", (channelId) => {
     socket.join(channelId);
     
-    try {
-      // Fetch last 50 messages from DB
-      const history = await Message.find({ channelId })
-        .sort({ createdAt: -1 }) // newest first
-        .limit(50)
-        .populate("user", "name"); // grab the user's name
-      
-      // Reverse to chronological order (oldest to newest)
-      const formattedHistory = history.reverse().map(msg => ({
-        id: msg._id,
-        user: msg.user?.name || "Unknown User",
-        time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: msg.text
-      }));
-
-      socket.emit("chat_history", formattedHistory);
-    } catch (err) {
-      console.error("❌ DB history error:", err);
+    // Send history to user who just joined
+    if(chatHistory[channelId]) {
+      socket.emit("chat_history", chatHistory[channelId]);
     }
   });
 
   // Handle incoming messages
-  socket.on("send_message", async ({ channelId, userId, text }) => {
-    try {
-      // 1. Save to DB
-      const newMsg = await Message.create({
-        channelId,
-        user: userId,
-        text
-      });
+  socket.on("send_message", ({ channelId, messageData }) => {
+    const enrichedMsg = {
+      ...messageData,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    };
 
-      // 2. Populate user to get name
-      await newMsg.populate("user", "name");
-
-      // 3. Format for frontend
-      const enrichedMsg = {
-        id: newMsg._id,
-        user: newMsg.user?.name || "Unknown User",
-        time: new Date(newMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: newMsg.text
-      };
-
-      // 4. Broadcast to the channel
-      io.to(channelId).emit("receive_message", enrichedMsg);
-    } catch(err) {
-      console.error("❌ Error saving message:", err);
+    // Store in history
+    if (!chatHistory[channelId]) chatHistory[channelId] = [];
+    chatHistory[channelId].push(enrichedMsg);
+    
+    // Keep only last 50 msgs
+    if (chatHistory[channelId].length > 50) {
+      chatHistory[channelId].shift();
     }
+
+    // Broadcast to the channel
+    io.to(channelId).emit("receive_message", enrichedMsg);
   });
 
   socket.on("disconnect", () => {
