@@ -5,7 +5,7 @@ const messageSchema = new mongoose.Schema(
     channelId: {
       type: String,
       required: true,
-      enum: ["sd", "ai", "devops", "cp"], // Valid career paths
+      default: "global",
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

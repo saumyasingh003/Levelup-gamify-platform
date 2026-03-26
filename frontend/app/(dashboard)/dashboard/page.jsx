@@ -18,12 +18,9 @@ import {
   Medal
 } from "lucide-react";
 
-// Mock data
+// Single unified global chat
 const CHANNELS = [
-  { id: "sd", name: "Software Development", members: 1240 },
-  { id: "ai", name: "AI & ML", members: 980 },
-  { id: "devops", name: "DevOps", members: 450 },
-  { id: "cp", name: "Competitive Programming", members: 2100 },
+  { id: "global", name: "Global Community Chat", members: 4790 },
 ];
 
 const INITIAL_MESSAGES = [];
