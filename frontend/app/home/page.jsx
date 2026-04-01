@@ -10,6 +10,8 @@ import RoadmapAccordion from "@/components/RoadmapAccordion";
 import TodoPlanner from "@/components/TodoPlanner";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
+import { User, Briefcase, ChevronRight, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 const Home = () => {
   const [openPopup, setOpenPopup] = useState(false);
@@ -77,6 +79,26 @@ const Home = () => {
                 Start Learning
               </Button>
             )}
+
+            <div className="flex gap-4 mt-8">
+               <Link href="/profile" className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-black transition-all group uppercase tracking-widest">
+                  <User className="w-4 h-4" />
+                  View Profile
+                  <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+               </Link>
+               <span className="text-gray-200">|</span>
+               <Link href="/portfolio" className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-black transition-all group uppercase tracking-widest">
+                  <Briefcase className="w-4 h-4" />
+                  My Portfolio
+                  <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+               </Link>
+               <span className="text-gray-200">|</span>
+               <Link href="/career" className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-black transition-all group uppercase tracking-widest">
+                  <Sparkles className="w-4 h-4" />
+                  Career Hub
+                  <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+               </Link>
+            </div>
           </div>
 
           {/* RIGHT */}

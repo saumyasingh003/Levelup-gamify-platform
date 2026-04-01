@@ -10,6 +10,8 @@ import {
 import api from "@/lib/api";
 import { CheckCircle2, Circle, PartyPopper, Loader2, Lock } from "lucide-react";
 import { toast } from "react-hot-toast";
+import QuizModule from "./QuizModule";
+import { Sparkles } from "lucide-react";
 
 const RoadmapAccordion = ({ 
   roadmap = [], 
@@ -23,6 +25,7 @@ const RoadmapAccordion = ({
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpData, setLevelUpData] = useState(null);
   const [isToggling, setIsToggling] = useState(null); // track which topic is being toggled
+  const [activeQuiz, setActiveQuiz] = useState(null); // track which topic quiz is open
 
   const toggleTopic = async (levelNum, topicIdx) => {
     if (levelNum > (progress?.level || 1)) {
@@ -153,21 +156,45 @@ const RoadmapAccordion = ({
                   {level.topics.map((topic, index) => {
                     const key = `${level.level}-${index}`;
                     const isDone = progress?.completedTopics?.includes(key);
+                    const hasQuizzed = progress?.quizHistory?.some(
+                      (h) => h.topicId === topic
+                    );
+
+                    // Unlock logic:
+                    // - Subtopic 0: always unlocked
+                    // - Subtopic N (N>0): unlocked only if previous subtopic is BOTH ticked AND quizzed
+                    let isSubtopicUnlocked = true;
+                    if (index > 0) {
+                      const prevKey = `${level.level}-${index - 1}`;
+                      const prevDone = progress?.completedTopics?.includes(prevKey);
+                      const prevTopic = level.topics[index - 1];
+                      const prevQuizzed = progress?.quizHistory?.some(
+                        (h) => h.topicId === prevTopic
+                      );
+                      isSubtopicUnlocked = prevDone && prevQuizzed;
+                    }
 
                     return (
                       <div
                         key={index}
-                        onClick={() =>
-                          !isToggling && toggleTopic(level.level, index)
-                        }
-                        className={`group flex items-center gap-3 py-1 cursor-pointer transition-opacity ${
+                        onClick={() => {
+                          if (isToggling) return;
+                          if (!isSubtopicUnlocked) {
+                            toast("Complete the previous subtopic & its quiz to unlock!", { icon: "🔒" });
+                            return;
+                          }
+                          toggleTopic(level.level, index);
+                        }}
+                        className={`group flex items-center gap-3 py-1 transition-opacity ${
                           isToggling === key ? "opacity-50" : "opacity-100"
-                        }`}
+                        } ${isSubtopicUnlocked ? "cursor-pointer" : "cursor-not-allowed"}`}
                       >
                         {isToggling === key ? (
                           <Loader2 className="w-4 h-4 text-black animate-spin shrink-0" />
                         ) : isDone ? (
                           <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
+                        ) : !isSubtopicUnlocked ? (
+                          <Lock className="w-4 h-4 text-gray-300 shrink-0" />
                         ) : (
                           <Circle className="w-4 h-4 text-gray-300 group-hover:text-black transition-colors shrink-0" />
                         )}
@@ -176,11 +203,40 @@ const RoadmapAccordion = ({
                           className={`text-sm ${
                             isDone
                               ? "line-through text-gray-400"
+                              : !isSubtopicUnlocked
+                              ? "text-gray-400"
                               : "text-gray-600 group-hover:text-black transition-colors"
                           }`}
                         >
                           {topic}
                         </span>
+
+                        {/* Quiz button: only show after subtopic is ticked */}
+                        {!isLocked && isDone && (() => {
+                          return hasQuizzed ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveQuiz(topic);
+                              }}
+                              className="ml-auto flex items-center gap-1.5 px-2 py-1 bg-green-50 border border-green-300 text-green-600 rounded-md text-[9px] font-black uppercase tracking-widest transition-all shadow-sm hover:bg-green-100"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              Completed
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveQuiz(topic);
+                              }}
+                              className="ml-auto flex items-center gap-1.5 px-2 py-1 bg-white hover:bg-black hover:text-white border border-gray-200 rounded-md text-[9px] font-black uppercase tracking-widest transition-all group/quiz shadow-sm animate-pulse"
+                            >
+                              <Sparkles className="w-3 h-3 group-hover/quiz:animate-spin" />
+                              Take Quiz
+                            </button>
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -261,6 +317,20 @@ const RoadmapAccordion = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* QUIZ MODAL */}
+      {activeQuiz && (
+        <QuizModule 
+          topic={activeQuiz}
+          career={career}
+          level={activeLevel}
+          onClose={() => setActiveQuiz(null)}
+          onComplete={(score, updatedProgress) => {
+            setActiveQuiz(null);
+            if (updatedProgress && onUpdate) onUpdate(updatedProgress);
+          }}
+        />
       )}
     </div>
   );

@@ -14,6 +14,7 @@ export const getUserRoadmap = async (req, res) => {
     const progress = await Progress.findOne({
       user: req.user._id,
     });
+    console.log(`[Roadmap] Fetching roadmap for user ${req.user?._id}, career: ${progress?.career}`);
 
     if (!progress) {
       return res.status(404).json({
@@ -73,7 +74,7 @@ Format:
 }
 `;
 
-      const modelNames = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash", "gemini-1.5-flash"];
+      const modelNames = ["gemini-2.5-flash", "gemini-3-flash", "gemini-1.5-flash"];
       let result;
       let lastError;
 
@@ -117,6 +118,7 @@ Format:
       roadmap = savedLevels;
     }
 
+    console.log(`[Roadmap] Successfully returned ${roadmap.length} levels for ${req.user?._id}`);
     res.json({
       progress,
       roadmap,

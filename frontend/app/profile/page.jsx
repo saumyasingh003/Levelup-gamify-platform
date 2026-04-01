@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
-import { Pencil, Flame, Award, Zap, Brain } from "lucide-react";
+import { Pencil, Flame, Award, Zap, Brain, Shield, Edit3, Settings, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import toast from "react-hot-toast";
+import AchievementGallery from "@/components/AchievementGallery";
+import axios from "axios";
 
 const Profile = () => {
   const { user: authUser, checkAuth } = useAuth();
@@ -15,7 +17,8 @@ const Profile = () => {
 
   const fetchProgress = async () => {
     try {
-      const res = await axios.get(`${API_URL}/progress`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const res = await axios.get(`${apiUrl}/progress`, {
         withCredentials: true,
       });
       setProgress(res.data);
@@ -159,55 +162,30 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* ================= PROGRESS ================= */}
-        <div className="w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-6">Your Progress</h2>
+        {/* ================= ULTRA PRO FEATURES ================= */}
+        <div className="grid lg:grid-cols-2 gap-8 mt-8">
+           {/* PROGRESS & STATUS */}
+           <div className="space-y-8">
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Streak Status</h3>
+                 <div className="flex items-center justify-between p-4 bg-orange-50 border border-orange-100 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                       <span className="text-3xl">🔥</span>
+                       <div>
+                          <p className="text-xl font-black text-black">{progress?.streak || 1} Days</p>
+                          <p className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Current Learning Streak</p>
+                       </div>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-sm font-black text-black">x{progress?.streakMultiplier?.toFixed(1) || "1.0"}</p>
+                       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">XP Multiplier</p>
+                    </div>
+                 </div>
+              </div>
+           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Level */}
-            <div className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 hover:shadow-sm transition">
-              <div className="p-2 bg-black text-white rounded-md">
-                <Brain size={18} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Level</p>
-                <p className="text-lg font-semibold">{stats.level}</p>
-              </div>
-            </div>
-
-            {/* Streak */}
-            <div className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 hover:shadow-sm transition">
-              <div className="p-2 bg-black text-white rounded-md">
-                <Flame size={18} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Streak</p>
-                <p className="text-lg font-semibold">{stats.streak} days</p>
-              </div>
-            </div>
-
-            {/* XP */}
-            <div className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 hover:shadow-sm transition">
-              <div className="p-2 bg-black text-white rounded-md">
-                <Zap size={18} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">XP Points</p>
-                <p className="text-lg font-semibold">{stats.xp}</p>
-              </div>
-            </div>
-
-            {/* Badges */}
-            <div className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 hover:shadow-sm transition">
-              <div className="p-2 bg-black text-white rounded-md">
-                <Award size={18} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Badges</p>
-                <p className="text-lg font-semibold">{stats.badges.length}</p>
-              </div>
-            </div>
-          </div>
+           {/* ACHIEVEMENTS */}
+           <AchievementGallery badges={progress?.badges} />
         </div>
       </div>
     </ProtectedRoute>

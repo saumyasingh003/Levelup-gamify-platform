@@ -1,8 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import StudyPlan from "../models/studyPlan.js";
 
 export const generateTodoPlan = async (req, res) => {
   try {
     const { planType, roadmap } = req.body;
+    const userId = req.user._id;
+    console.log(`[Todo] Generating ${planType} plan for user ${userId}`);
 
     if (!planType || !roadmap || !Array.isArray(roadmap) || roadmap.length === 0) {
       return res.status(400).json({
@@ -112,7 +115,7 @@ Format:
 }` : ""}
 `;
 
-    const modelNames = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3-flash", "gemini-1.5-flash"];
+    const modelNames = ["gemini-2.5-flash", "gemini-3-flash", "gemini-1.5-flash"];
     let result;
     let lastError;
 
@@ -140,6 +143,15 @@ Format:
     
     const todoPlan = JSON.parse(jsonMatch[0]);
 
+    // Save/upsert the plan into the database
+    const currentLevel = roadmap[0]?.level || null;
+    await StudyPlan.findOneAndUpdate(
+      { userId, planType },
+      { plan: todoPlan, roadmapLevel: currentLevel },
+      { upsert: true, new: true }
+    );
+
+    console.log(`[Todo] Successfully generated and saved ${planType} plan for ${userId}`);
     res.json({ plan: todoPlan });
   } catch (error) {
     console.error("❌ Todo generation error:", error);
@@ -148,5 +160,47 @@ Format:
       error: error.message,
       stack: error.stack // Debugging
     });
+  }
+};
+
+// GET saved plan for a user
+export const getSavedPlan = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { planType } = req.params;
+
+    if (!["daily", "weekly"].includes(planType)) {
+      return res.status(400).json({ message: "planType must be daily or weekly" });
+    }
+
+    const saved = await StudyPlan.findOne({ userId, planType });
+
+    if (!saved) {
+      return res.json({ plan: null });
+    }
+
+    res.json({ plan: saved.plan, savedAt: saved.updatedAt });
+  } catch (error) {
+    console.error("❌ Get saved plan error:", error);
+    res.status(500).json({ message: "Failed to get saved plan", error: error.message });
+  }
+};
+
+// DELETE a saved plan (used when user clicks "Regenerate")
+export const deleteSavedPlan = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { planType } = req.params;
+
+    if (!["daily", "weekly"].includes(planType)) {
+      return res.status(400).json({ message: "planType must be daily or weekly" });
+    }
+
+    await StudyPlan.findOneAndDelete({ userId, planType });
+
+    res.json({ success: true, message: "Plan deleted" });
+  } catch (error) {
+    console.error("❌ Delete plan error:", error);
+    res.status(500).json({ message: "Failed to delete plan", error: error.message });
   }
 };

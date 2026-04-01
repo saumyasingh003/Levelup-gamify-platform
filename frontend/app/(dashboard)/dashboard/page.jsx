@@ -16,15 +16,23 @@ import {
   Search,
   Trophy,
   Medal,
-  Edit2
+  Edit2,
+  Paperclip,
+  Smile,
+  FileText,
+  ExternalLink,
+  Image as ImageIcon,
+  X
 } from "lucide-react";
+import AIStudyBuddy from "@/components/AIStudyBuddy";
+import SkillRadar from "@/components/SkillRadar";
 
 // Mock data
 const CHANNELS = [
-  { id: "sd", name: "Software Development", members: 1240 },
-  { id: "ai", name: "AI & ML", members: 980 },
-  { id: "devops", name: "DevOps", members: 450 },
-  { id: "cp", name: "Competitive Programming", members: 2100 },
+  { id: "SD", name: "Software Development", members: 1240 },
+  { id: "AI", name: "AI & ML", members: 980 },
+  { id: "DEV", name: "DevOps", members: 450 },
+  { id: "CP", name: "Competitive Programming", members: 2100 },
 ];
 
 const INITIAL_MESSAGES = [];
@@ -40,9 +48,17 @@ const Dashboard = () => {
   const [editMessageText, setEditMessageText] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [onlineCount, setOnlineCount] = useState(0);
   
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+
+  const EMOJIS = ["🔥", "⭐", "🚀", "⚡", "💯", "✅", "🙌", "👋", "👏", "💻", "💡", "🎮", "🎯", "🏆"];
 
   // Fetch Global Leaderboard
   useEffect(() => {
@@ -72,11 +88,17 @@ const Dashboard = () => {
     });
 
     socketRef.current.on("chat_history", (history) => {
-      setMessages(history);
+      // Ensure msg.id is present (from backend _id)
+      const mappedHistory = history.map(m => ({ ...m, id: m._id || m.id }));
+      setMessages(mappedHistory);
     });
 
     socketRef.current.on("message_updated", ({ messageId, newText }) => {
       setMessages((prev) => prev.map(m => m.id === messageId ? { ...m, text: newText, isEdited: true } : m));
+    });
+
+    socketRef.current.on("online_count", ({ channelId, count }) => {
+      setOnlineCount(count);
     });
 
     return () => {
@@ -97,13 +119,43 @@ const Dashboard = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+      const res = await axios.post(`${apiUrl}/community/upload`, formData, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data?.success) {
+        setUploadedFile({
+          url: res.data.fileUrl,
+          type: res.data.fileType,
+          name: file.name,
+        });
+      }
+    } catch (err) {
+      console.error("Upload failed", err);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSendMessage = () => {
-    if (!message.trim() || !user) return;
+    if ((!message.trim() && !uploadedFile) || !user) return;
     
     const msgData = {
-      user: user.name || user.username || "User",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      userId: user.id || user._id,
       text: message,
+      fileUrl: uploadedFile?.url || null,
+      fileType: uploadedFile?.type || null,
     };
 
     socketRef.current.emit("send_message", {
@@ -112,6 +164,7 @@ const Dashboard = () => {
     });
 
     setMessage("");
+    setUploadedFile(null);
   };
 
   const handleSaveEdit = (msgId) => {
@@ -211,13 +264,15 @@ const Dashboard = () => {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
                 <Users className="w-4 h-4" />
-                {currentChannel?.members.toLocaleString()} online
+                {onlineCount.toLocaleString()} online
               </div>
               <div className="relative">
                 <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input 
                   type="text" 
                   placeholder="Search messages..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-md text-xs font-medium focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all w-48"
                 />
               </div>
@@ -233,23 +288,66 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {messages.map((msg) => (
-              <div key={msg.id} className="flex gap-4 group">
-                {/* AVATAR */}
-                <div className="w-10 h-10 rounded-md bg-gray-900 flex items-center justify-center text-white font-bold shrink-0 uppercase">
-                  {msg.user.charAt(0)}
-                </div>
-
-                {/* CONTENT */}
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1">
+            {messages.filter(m => 
+              (m.text || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+              (m.user?.name || "").toLowerCase().includes(searchTerm.toLowerCase())
+            ).map((msg) => {
+               const isMe = msg.user?._id === (user?.id || user?._id) || msg.user?.name === (user?.name || user?.username);
+               
+               return (
+                 <div key={msg.id} className={`flex gap-4 group ${isMe ? 'flex-row-reverse' : ''}`}>
+                   {/* AVATAR */}
+                   <div className={`w-10 h-10 rounded-md bg-gray-900 flex items-center justify-center text-white font-bold shrink-0 uppercase ${isMe ? 'bg-black' : ''}`}>
+                     {msg.user?.name?.charAt(0) || "U"}
+                   </div>
+ 
+                   {/* CONTENT */}
+                   <div className={`flex flex-col flex-1 min-w-0 ${isMe ? 'items-end' : ''}`}>
+                  <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
                     <span className="font-semibold text-sm text-black hover:underline cursor-pointer">
-                      {msg.user}
+                      {msg.user?.name || "Unknown User"}
                     </span>
                     <span className="text-[10px] font-medium text-gray-400">
-                      {msg.time} {msg.isEdited && <span className="italic ml-1">(edited)</span>}
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {msg.isEdited && <span className="italic ml-1">(edited)</span>}
                     </span>
                   </div>
+                  
+                  {msg.fileUrl && (
+                    <div className="mb-2 max-w-sm rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
+                      {msg.fileType?.startsWith("image/") ? (
+                        <div className="relative group">
+                          <img 
+                            src={msg.fileUrl} 
+                            alt="Uploaded" 
+                            className="max-h-64 w-auto object-contain bg-white cursor-pointer hover:opacity-95 transition-opacity" 
+                            onClick={() => window.open(msg.fileUrl, '_blank')}
+                          />
+                          <button 
+                            className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => window.open(msg.fileUrl, '_blank')}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="p-3 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded bg-red-50 flex items-center justify-center text-red-500">
+                            <FileText className="w-6 h-6" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-black truncate">Document Attached</p>
+                            <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{msg.fileType?.split('/')[1] || 'PDF'}</span>
+                          </div>
+                          <button 
+                             onClick={() => window.open(msg.fileUrl, '_blank')}
+                             className="p-2 hover:bg-gray-200 rounded-md transition-colors"
+                          >
+                             <ExternalLink className="w-4 h-4 text-gray-400 hover:text-black" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   {editingMsgId === msg.id ? (
                     <div className="mt-1 flex flex-col gap-2 w-full max-w-3xl">
@@ -278,7 +376,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* EDIT BUTTON (Only for the message author) */}
-                {msg.user === (user?.name || user?.username || "User") && editingMsgId !== msg.id && (
+                {(msg.user?._id === (user?.id || user?._id) || msg.user?.name === (user?.name || user?.username)) && editingMsgId !== msg.id && (
                   <button 
                     onClick={() => {
                       setEditingMsgId(msg.id);
@@ -290,20 +388,81 @@ const Dashboard = () => {
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                 )}
-              </div>
-            ))}
+                 </div>
+               );
+            })}
             <div ref={messagesEndRef} />
           </div>
 
           {/* INPUT AREA */}
           <div className="p-4 border-t border-gray-200 bg-white shrink-0">
-            <div className="relative flex items-end bg-gray-50 border border-gray-200 rounded-lg focus-within:border-black focus-within:ring-1 focus-within:ring-black transition-all overflow-hidden group">
+            {uploadedFile && (
+              <div className="mb-3 flex items-center gap-3 p-2 bg-gray-50 border border-gray-200 rounded-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="w-10 h-10 rounded border border-gray-200 flex items-center justify-center bg-white shadow-sm overflow-hidden text-gray-400">
+                  {uploadedFile.type.startsWith("image/") ? <ImageIcon className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                   <p className="text-xs font-bold text-black truncate">{uploadedFile.name}</p>
+                   <span className="text-[10px] text-gray-400 font-medium tracking-tight">Ready to send</span>
+                </div>
+                <button onClick={() => setUploadedFile(null)} className="p-1.5 hover:bg-gray-200 rounded-full transition-colors">
+                  <X className="w-4 h-4 text-gray-400 hover:text-black" />
+                </button>
+              </div>
+            )}
+            
+            <div className="relative flex items-center bg-gray-50 border border-gray-200 rounded-lg focus-within:border-black focus-within:ring-1 focus-within:ring-black transition-all group">
+              <div className="flex items-center pl-2 gap-1">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 text-gray-400 hover:text-black hover:bg-gray-200 rounded-md transition-all"
+                  disabled={isUploading}
+                >
+                  <Paperclip className={`w-5 h-5 ${isUploading ? 'animate-pulse' : ''}`} />
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  className="hidden" 
+                />
+                
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className={`p-2 hover:bg-gray-200 rounded-md transition-all ${showEmojiPicker ? 'text-black bg-gray-200' : 'text-gray-400 hover:text-black'}`}
+                  >
+                    <Smile className="w-5 h-5" />
+                  </button>
+                  
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-12 left-0 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 w-64 z-50 animate-in zoom-in-95 duration-200 origin-bottom-left">
+                       <div className="grid grid-cols-7 gap-1">
+                         {EMOJIS.map(e => (
+                           <button 
+                             key={e} 
+                             onClick={() => {
+                               setMessage(prev => prev + e);
+                               setShowEmojiPicker(false);
+                             }}
+                             className="text-xl p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                           >
+                             {e}
+                           </button>
+                         ))}
+                       </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder={`Message #${currentChannel?.name}`}
+                placeholder={isUploading ? "Uploading file..." : `Message #${currentChannel?.name}`}
                 className="w-full bg-transparent border-none focus:ring-0 p-3.5 min-h-[52px] max-h-[150px] resize-none text-sm text-black placeholder:text-gray-400"
                 rows={1}
+                disabled={isUploading}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -313,10 +472,11 @@ const Dashboard = () => {
               />
               <button 
                 onClick={handleSendMessage}
-                className={`absolute right-2 bottom-2 p-1.5 rounded-md transition-colors ${
-                  message.trim() 
-                    ? "bg-black text-white hover:bg-gray-800" 
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                disabled={(!message.trim() && !uploadedFile) || isUploading}
+                className={`mr-2 p-1.5 rounded-md transition-all ${
+                  (message.trim() || uploadedFile) && !isUploading
+                    ? "bg-black text-white hover:bg-gray-800 scale-100 shadow-lg shadow-black/10" 
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed scale-95"
                 }`}
               >
                 <Send className="w-4 h-4 ml-0.5 mb-0.5" />
@@ -399,6 +559,15 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* AI STUDY BUDDY FLOATING SIDEBAR */}
+        <AIStudyBuddy 
+          context={{
+            career: user?.progress?.career || "SD",
+            level: user?.progress?.level || 1,
+            topic: currentChannel?.name || "General"
+          }} 
+        />
 
       </div>
     </ProtectedRoute>

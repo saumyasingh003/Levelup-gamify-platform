@@ -26,6 +26,15 @@ export const updateStreak = async (progress) => {
       progress.lastVisit = new Date();
       updated = true;
     }
+
+    // Update Multiplier based on streak
+    if (updated) {
+      if (progress.streak >= 30) progress.streakMultiplier = 2.0;
+      else if (progress.streak >= 14) progress.streakMultiplier = 1.5;
+      else if (progress.streak >= 7) progress.streakMultiplier = 1.2;
+      else if (progress.streak >= 3) progress.streakMultiplier = 1.1;
+      else progress.streakMultiplier = 1.0;
+    }
   }
 
   if (updated) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import {
   Calendar,
@@ -13,6 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  RefreshCw,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -24,6 +26,42 @@ const TodoPlanner = ({ roadmap, currentLevel, progress }) => {
   const [checked, setChecked] = useState({});
   const [openDay, setOpenDay] = useState(null);
   const [showAdvice, setShowAdvice] = useState(false);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+
+  // On mount, check if a saved weekly plan exists
+  useEffect(() => {
+    const loadSavedPlan = async () => {
+      setLoadingSaved(true);
+      try {
+        const weeklyRes = await api.get("/todo/plan/weekly");
+        if (weeklyRes.data?.plan) {
+          setPlan(weeklyRes.data.plan);
+          setPlanType("weekly");
+          setStep("show");
+          setLoadingSaved(false);
+          return;
+        }
+      } catch (err) {
+        // Plan not found, that's fine
+      }
+
+      try {
+        const dailyRes = await api.get("/todo/plan/daily");
+        if (dailyRes.data?.plan) {
+          setPlan(dailyRes.data.plan);
+          setPlanType("daily");
+          setStep("show");
+          setLoadingSaved(false);
+          return;
+        }
+      } catch (err) {
+        // Plan not found, that's fine
+      }
+      setLoadingSaved(false);
+    };
+
+    loadSavedPlan();
+  }, []);
 
   const toggleCheck = (key) => {
     setChecked((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -73,6 +111,24 @@ const TodoPlanner = ({ roadmap, currentLevel, progress }) => {
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!planType) return;
+
+    // Delete the saved plan first
+    try {
+      await api.delete(`/todo/plan/${planType}`);
+    } catch (err) {
+      // Ignore delete errors
+    }
+
+    // Regenerate
+    handleGenerate(planType);
+  };
+
+  const handleBack = () => {
+    setStep("choose");
+  };
+
   // TASK CARD
   const TaskCard = ({ task, index, prefix }) => {
     const key = `${prefix}-${index}`;
@@ -113,6 +169,17 @@ const TodoPlanner = ({ roadmap, currentLevel, progress }) => {
   };
 
   if (step === "hide") return null;
+
+  // Show a subtle loading state while checking for saved plans
+  if (loadingSaved) {
+    return (
+      <div className="w-full">
+        <div className="bg-black rounded-lg p-6 flex justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+          <Loader2 className="animate-spin w-5 h-5 text-white" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -183,12 +250,25 @@ const TodoPlanner = ({ roadmap, currentLevel, progress }) => {
             </div>
 
             {!loading && (
-              <button
-                onClick={() => setStep("choose")}
-                className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-black transition-colors"
-              >
-                Reset
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Back Button */}
+                <button
+                  onClick={handleBack}
+                  className="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-black transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back
+                </button>
+
+                {/* Regenerate Button */}
+                <button
+                  onClick={handleRegenerate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Regenerate
+                </button>
+              </div>
             )}
           </div>
 
@@ -278,9 +358,10 @@ const TodoPlanner = ({ roadmap, currentLevel, progress }) => {
                             key={i}
                             href={res.url}
                             target="_blank"
-                            className="text-sm text-gray-600 hover:text-black underline decoration-gray-200 hover:decoration-black transition-colors inline-flex w-fit"
+                            className="text-sm text-gray-600 hover:text-black transition-colors flex items-center justify-between w-full group/link"
                           >
-                            {res.name}
+                            <span className="underline decoration-gray-200 group-hover/link:decoration-black transition-colors">{res.name}</span>
+                            <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover/link:text-black transition-colors shrink-0 ml-3" />
                           </a>
                         ))}
                       </div>

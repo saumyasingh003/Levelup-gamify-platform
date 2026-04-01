@@ -68,6 +68,7 @@ export const getLeaderboard = async (req, res) => {
       };
     });
 
+    console.log(`[Community] Leaderboard fetched - ${formattedLeaderboard.length} entries`);
     res.status(200).json({ success: true, data: formattedLeaderboard });
   } catch (error) {
     console.error("Leaderboard fetch error:", error);

@@ -24,6 +24,21 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  // Live Activity Heartbeat (Every 5 minutes)
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(async () => {
+        try {
+          await api.post("/progress/activity/heartbeat");
+          console.log("Activity Heartbeat Sent");
+        } catch (err) {
+          console.error("Heartbeat error:", err);
+        }
+      }, 300000); // 5 minutes
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
   const login = (userData) => {
     setUser(userData);
   };

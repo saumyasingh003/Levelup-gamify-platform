@@ -1,4 +1,5 @@
 import User from "../models/user.js";
+import Progress from "../models/progress.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -57,6 +58,8 @@ export const register = async (req, res) => {
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
+
+    console.log(`[Auth] User registered successfully: ${user.email} (${user._id})`);
 
     res.status(201).json({
       message: "User Registered Successfully",
@@ -177,11 +180,16 @@ export const getProfile = async (req, res) => {
 
   try {
 
-    const user = await User
-      .findById(req.user.id)
-      .select("-password");
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.status(200).json(user);
+    // Include basic progress for career-hub context
+    const progress = await Progress.findOne({ user: user._id });
+    
+    res.status(200).json({ 
+      ...user.toObject(), 
+      progress: progress ? { career: progress.career, level: progress.level } : null 
+    });
 
   } catch (error) {
 
@@ -225,6 +233,7 @@ export const updateProfile = async (req, res) => {
     user.year = year || user.year;
 
     const updatedUser = await user.save();
+    console.log(`[Auth] Profile updated for user: ${user.email} (${user._id})`);
 
     res.status(200).json({
       message: "Profile updated successfully",

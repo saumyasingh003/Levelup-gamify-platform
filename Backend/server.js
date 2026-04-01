@@ -5,6 +5,8 @@ import http from "http";
 import app from "./src/app.js";
 import connectDB from "./src/config/db.js";
 import { Server } from "socket.io";
+import Message from "./src/models/message.js";
+import User from "./src/models/user.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -25,60 +27,94 @@ const io = new Server(server, {
   }
 });
 
-// Ephemeral in-memory chat history per channel (keeps last 50 msgs)
-const chatHistory = {
-  "sd": [],
-  "ai": [],
-  "devops": [],
-  "cp": []
-};
+// Persistent chat history via MongoDB
 
 // Socket logic
 io.on("connection", (socket) => {
   console.log(`🔌 Client connected: ${socket.id}`);
 
   // Join a specific channel
-  socket.on("join_channel", (channelId) => {
+  socket.on("join_channel", async (channelId) => {
+    // Leave previous rooms (except own ID)
+    socket.rooms.forEach(room => {
+      if(room !== socket.id) {
+        socket.leave(room);
+        const count = (io.sockets.adapter.rooms.get(room)?.size || 1) - 1;
+        io.to(room).emit("online_count", { channelId: room, count: Math.max(0, count) });
+      }
+    });
+
     socket.join(channelId);
     
-    // Send history to user who just joined
-    if(chatHistory[channelId]) {
-      socket.emit("chat_history", chatHistory[channelId]);
+    // Broadcast updated count to everyone in the channel
+    const count = io.sockets.adapter.rooms.get(channelId)?.size || 0;
+    io.to(channelId).emit("online_count", { channelId, count });
+
+    try {
+      // Fetch last 50 messages for this channel
+      const history = await Message.find({ channelId })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .populate("user", "name"); // Populate user name
+
+      // Reverse to get chronological order
+      socket.emit("chat_history", history.reverse());
+    } catch (err) {
+      console.error("Error fetching chat history:", err);
     }
   });
 
   // Handle incoming messages
-  socket.on("send_message", ({ channelId, messageData }) => {
-    const enrichedMsg = {
-      ...messageData,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
-    };
+  socket.on("send_message", async ({ channelId, messageData }) => {
+    try {
+      const { userId, text, fileUrl, fileType } = messageData;
 
-    // Store in history
-    if (!chatHistory[channelId]) chatHistory[channelId] = [];
-    chatHistory[channelId].push(enrichedMsg);
-    
-    // Keep only last 50 msgs
-    if (chatHistory[channelId].length > 50) {
-      chatHistory[channelId].shift();
+      const newMessage = new Message({
+        channelId,
+        user: userId,
+        text,
+        fileUrl,
+        fileType
+      });
+
+      const savedMsg = await newMessage.save();
+      const populatedMsg = await savedMsg.populate("user", "name");
+
+      // Broadcast to the channel
+      io.to(channelId).emit("receive_message", populatedMsg);
+    } catch (err) {
+      console.error("Error saving message:", err);
     }
-
-    // Broadcast to the channel
-    io.to(channelId).emit("receive_message", enrichedMsg);
   });
 
   // Handle updating messages
-  socket.on("update_message", ({ channelId, messageId, newText }) => {
-    if (chatHistory[channelId]) {
-      const msg = chatHistory[channelId].find(m => m.id === messageId);
-      if (msg) {
-        msg.text = newText;
-        msg.isEdited = true;
-        
+  socket.on("update_message", async ({ channelId, messageId, newText }) => {
+    try {
+      const updatedMsg = await Message.findByIdAndUpdate(
+        messageId,
+        { text: newText },
+        { new: true }
+      ).populate("user", "name");
+
+      if (updatedMsg) {
         // Broadcast the update to everyone in the room
-        io.to(channelId).emit("message_updated", { messageId, newText });
+        io.to(channelId).emit("message_updated", { 
+          messageId: updatedMsg._id, 
+          newText: updatedMsg.text 
+        });
       }
+    } catch (err) {
+      console.error("Error updating message:", err);
     }
+  });
+
+  socket.on("disconnecting", () => {
+    socket.rooms.forEach(room => {
+      if(room !== socket.id) {
+        const count = (io.sockets.adapter.rooms.get(room)?.size || 1) - 1;
+        io.to(room).emit("online_count", { channelId: room, count: Math.max(0, count) });
+      }
+    });
   });
 
   socket.on("disconnect", () => {
