@@ -113,10 +113,12 @@ io.on("connection", (socket) => {
       if(room !== socket.id) {
         const count = (io.sockets.adapter.rooms.get(room)?.size || 1) - 1;
         io.to(room).emit("online_count", { channelId: room, count: Math.max(0, count) });
+        io.to(room).emit("user_left_collaboration", { userId: socket.id });
       }
     });
   });
 
+  // --- SOCKET DISCONNECT ---
   socket.on("disconnect", () => {
     console.log(`🔌 Client disconnected: ${socket.id}`);
   });

@@ -115,6 +115,47 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* MISSION CONTROL COLORS */
+  --cyber-black: #050505;
+  --cyber-gray: #0a0a0a;
+  --cyber-blue: #00f2ff;
+  --cyber-purple: #7000ff;
+  --cyber-border: rgba(255, 255, 255, 0.05);
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-black/40 backdrop-blur-xl border border-white/5;
+  }
+  .cyber-grid {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .scanline {
+    @apply relative overflow-hidden;
+  }
+  .scanline::after {
+    content: "";
+    @apply absolute inset-0 w-full h-[100px] bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none;
+    animation: scan 8s linear infinite;
+  }
+}
+
+@keyframes scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(100vh); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes grid-flow {
+  from { background-position: 0 0; }
+  to { background-position: 40px 40px; }
 }
 
 @layer base {

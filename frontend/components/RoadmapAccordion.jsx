@@ -108,7 +108,7 @@ const RoadmapAccordion = ({
               value={String(level.level)}
               disabled={isLocked}
               className={`border-b border-gray-200 transition-all duration-300 ${
-                isLocked ? "opacity-50" : isOpen ? "border-l-4 border-l-black pl-3" : "pl-0"
+                isLocked ? "" : isOpen ? "border-l-4 border-l-black pl-3" : "pl-0"
               }`}
             >
               <AccordionTrigger 
@@ -120,7 +120,7 @@ const RoadmapAccordion = ({
                   <div className="flex items-center gap-3">
                     {isLocked ? (
                       <div className="p-1.5 bg-gray-100 rounded-md">
-                        <Lock className="w-4 h-4 text-gray-400" />
+                        <Lock className="w-4 h-4 text-gray-900" />
                       </div>
                     ) : (
                       <div className="p-1.5 bg-black rounded-md">
@@ -129,13 +129,13 @@ const RoadmapAccordion = ({
                         </span>
                       </div>
                     )}
-                    <span className={`font-semibold tracking-tight text-left ${isOpen ? "text-black" : "text-gray-900 hover:text-black transition-colors"}`}>
+                    <span className={`font-semibold tracking-tight text-left ${isLocked ? "text-black" : isOpen ? "text-black" : "text-gray-900 hover:text-black transition-colors"}`}>
                       {level.title}
                     </span>
                   </div>
 
                   {!isLocked && (
-                    <span className={`text-xs font-bold ${isOpen ? "text-black" : "text-gray-400"}`}>
+                    <span className={`text-xs font-bold ${isOpen ? "text-black" : "text-gray-900"}`}>
                       {progressPercent}%
                     </span>
                   )}
@@ -194,7 +194,7 @@ const RoadmapAccordion = ({
                         ) : isDone ? (
                           <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
                         ) : !isSubtopicUnlocked ? (
-                          <Lock className="w-4 h-4 text-gray-300 shrink-0" />
+                          <Lock className="w-4 h-4 text-black shrink-0" />
                         ) : (
                           <Circle className="w-4 h-4 text-gray-300 group-hover:text-black transition-colors shrink-0" />
                         )}
@@ -204,7 +204,7 @@ const RoadmapAccordion = ({
                             isDone
                               ? "line-through text-gray-400"
                               : !isSubtopicUnlocked
-                              ? "text-gray-400"
+                              ? "text-black font-medium"
                               : "text-gray-600 group-hover:text-black transition-colors"
                           }`}
                         >
@@ -249,12 +249,12 @@ const RoadmapAccordion = ({
 
       {/* SHOW MORE */}
       {roadmap.length > 3 && (
-        <button
-          onClick={() => setShowAllLevels((prev) => !prev)}
-          className="mt-6 text-sm font-medium text-gray-500 hover:text-black transition-colors"
-        >
-          {showAllLevels ? "Show Less" : "Show More Levels"}
-        </button>
+   <button
+  onClick={() => setShowAllLevels((prev) => !prev)}
+  className="mt-6 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-wider text-white bg-black transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-black/20"
+>
+  {showAllLevels ? "Show Less" : "Show More"}
+</button>
       )}
       {/* LEVEL UP POPUP */}
       {showLevelUp && (

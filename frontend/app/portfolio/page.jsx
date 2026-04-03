@@ -167,66 +167,90 @@ const PortfolioPage = () => {
     <ProtectedRoute>
       <div className="min-h-screen bg-[#fafafa] pb-24">
         {/* HERO HEADER */}
-        <div className="bg-black text-white pt-24 pb-32 px-6 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48 blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full -ml-32 -mb-32 blur-3xl" />
+     <div className="relative pt-24 pb-32 px-6 overflow-hidden text-white">
 
-          <div className="max-w-6xl mx-auto relative z-10">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 rounded-2xl bg-white text-black flex items-center justify-center text-4xl font-black shadow-2xl border-4 border-white/20 uppercase">
-                  {user.name.charAt(0)}
-                </div>
-                <div>
-                  <h1 className="text-4xl font-black tracking-tight">
-                    {user.name}
-                  </h1>
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-sm mt-1">
-                    Level {stats.highestLevel} • Senior Learner
-                  </p>
-                  <div className="flex flex-wrap gap-4 mt-4">
-                    {user.githubLink && (
-                      <a
-                        href={user.githubLink}
-                        target="_blank"
-                        className="flex items-center gap-2 text-xs font-bold text-white/60 hover:text-white transition-colors"
-                      >
-                        <Github className="w-4 h-4" /> GitHub
-                      </a>
-                    )}
-                    {user.linkedinLink && (
-                      <a
-                        href={user.linkedinLink}
-                        target="_blank"
-                        className="flex items-center gap-2 text-xs font-bold text-white/60 hover:text-white transition-colors"
-                      >
-                        <Linkedin className="w-4 h-4" /> LinkedIn
-                      </a>
-                    )}
-                    <span className="flex items-center gap-2 text-xs font-bold text-white/60">
-                      <Mail className="w-4 h-4" /> {user.email}
-                    </span>
-                  </div>
-                </div>
-              </div>
+  {/* Background Image */}
+  <div className="absolute inset-0">
+    <img
+      src="/portfolio.jpg"
+      alt="Portfolio Background"
+      className="w-full h-full object-cover"
+    />
+    {/* Dark overlay for readability */}
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
+  </div>
 
-              <div className="flex gap-3 print:hidden">
-                <button
-                  onClick={handleExport}
-                  className="px-6 py-2.5 bg-white text-black rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-gray-200 transition-all shadow-lg active:scale-95"
-                >
-                  <Download className="w-4 h-4" /> Export CV
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="p-2.5 border-2 border-white/20 rounded-lg text-white hover:bg-white/10 transition-all active:scale-95"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+  {/* Glow Effects */}
+  <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/10 rounded-full -mr-48 -mt-48 blur-3xl" />
+  <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-500/10 rounded-full -ml-32 -mb-32 blur-3xl" />
+
+  {/* Content */}
+  <div className="max-w-6xl mx-auto relative z-10">
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+
+      {/* Left */}
+      <div className="flex items-center gap-6">
+        <div className="w-24 h-24 rounded-3xl bg-white/90 text-black flex items-center justify-center text-4xl font-black shadow-2xl border border-white/30 backdrop-blur-xl uppercase">
+          {user.name.charAt(0)}
+        </div>
+
+        <div>
+          <h1 className="text-4xl font-black tracking-tight">
+            {user.name}
+          </h1>
+
+          <p className="text-white/70 font-bold uppercase tracking-widest text-sm mt-1">
+            Level {stats.highestLevel} • Senior Learner
+          </p>
+
+          <div className="flex flex-wrap gap-4 mt-4">
+            {user.githubLink && (
+              <a
+                href={user.githubLink}
+                target="_blank"
+                className="flex items-center gap-2 text-xs font-bold text-white/60 hover:text-white transition"
+              >
+                <Github className="w-4 h-4" /> GitHub
+              </a>
+            )}
+
+            {user.linkedinLink && (
+              <a
+                href={user.linkedinLink}
+                target="_blank"
+                className="flex items-center gap-2 text-xs font-bold text-white/60 hover:text-white transition"
+              >
+                <Linkedin className="w-4 h-4" /> LinkedIn
+              </a>
+            )}
+
+            <span className="flex items-center gap-2 text-xs font-bold text-white/60">
+              <Mail className="w-4 h-4" /> {user.email}
+            </span>
           </div>
         </div>
+      </div>
+
+      {/* Right Buttons */}
+      <div className="flex gap-3 print:hidden">
+        <button
+          onClick={handleExport}
+          className="px-5 py-2 bg-white text-black rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition shadow-lg shadow-black/20"
+        >
+          <Download className="w-4 h-4" /> Export
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="p-2 border border-white/30 rounded-xl text-white hover:bg-white/10 hover:scale-105 transition"
+        >
+          <Share2 className="w-4 h-4" />
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
         {/* MAIN BODY */}
         <div className="max-w-6xl mx-auto px-6 -mt-16 relative z-20">

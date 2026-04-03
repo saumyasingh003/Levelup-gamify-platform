@@ -56,10 +56,10 @@ const Home = () => {
 
   return (
     <ProtectedRoute>
-      <div className="w-full px-6 md:px-12 lg:px-20 py-12">
+      <div className="w-full px-6 md:px-12 lg:px-20 pt-0 pb-8">
 
         {/* TOP SECTION */}
-        <div className="flex flex-col lg:flex-row gap-12 items-center mb-16">
+        <div className="flex flex-col lg:flex-row gap-12 items-center mb-10">
 
           {/* LEFT */}
           <div className="flex-1">
@@ -67,25 +67,25 @@ const Home = () => {
               Master Your Learning Journey
             </h1>
 
-            <p className="mt-4 text-base text-gray-500 max-w-lg leading-relaxed">
+            <p className="mt-3 text-base text-gray-500 max-w-lg leading-relaxed">
               Unlock your career path, complete structured roadmaps, earn XP, and level up your skills with AI-powered precision.
             </p>
 
             {!roadmap && !loadingRoadmap && (
               <Button
                 onClick={() => setOpenPopup(true)}
-                className="mt-6 px-6 py-2.5 rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 transition-colors"
+                className="mt-5 px-6 py-2.5 rounded-md text-sm font-medium bg-black text-white hover:bg-gray-800 transition-colors"
               >
                 Start Learning
               </Button>
             )}
 
-            <div className="flex gap-4 mt-8">
-               <Link href="/profile" className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-black transition-all group uppercase tracking-widest">
+            <div className="flex gap-4 mt-6">
+               {/* <Link href="/profile" className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-black transition-all group uppercase tracking-widest">
                   <User className="w-4 h-4" />
                   View Profile
                   <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-               </Link>
+               </Link> */}
                <span className="text-gray-200">|</span>
                <Link href="/portfolio" className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-black transition-all group uppercase tracking-widest">
                   <Briefcase className="w-4 h-4" />
@@ -112,7 +112,7 @@ const Home = () => {
 
         {/* MAIN CONTENT (50/50) */}
         {roadmap && (
-          <div className="flex flex-col lg:flex-row gap-10 mt-14 w-full">
+          <div className="flex flex-col lg:flex-row gap-10 mt-10 w-full">
 
             {/* ROADMAP */}
             <div className="w-full lg:w-1/2">

@@ -1,0 +1,1 @@
+fetch('https://piston.codes/api/v2/execute', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ language: 'javascript', version: '18.15.0', files: [{ content: 'console.log(1)' }] })}).then(r=>r.text()).then(console.log);

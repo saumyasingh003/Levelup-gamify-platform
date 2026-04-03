@@ -23,40 +23,40 @@ const Landing = () => {
     <div className="bg-white selection:bg-black selection:text-white">
       
       {/* HERO SECTION */}
-      <section className="relative min-h-[85vh] flex flex-col items-center pt-24 px-6 overflow-hidden">
-        {/* Animated Background Orbs */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gray-100 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute top-1/2 right-1/4 w-[500px] h-[500px] bg-orange-50/50 rounded-full blur-[120px] delay-700 animate-pulse" />
-        </div>
+      <section className="relative min-h-screen flex flex-col items-center justify-start pt-20 px-6 overflow-hidden">
+        {/* BACKGROUND IMAGE WITH OVERLAY */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat brightness-110"
+          style={{ backgroundImage: "url('/mainbg.jpeg')" }}
+        />
+        <div className="absolute inset-0 bg-linear-to-b from-black/40 via-black/10 to-white transition-all duration-1000" />
 
         <div className="relative z-10 max-w-5xl mx-auto text-center">
-          <h1 className="text-6xl md:text-8xl font-black text-black leading-[0.9] tracking-tighter mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+          <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.9] tracking-tighter mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
             Gamify Your Growth <br />
             With <span className="text-[#ceab0d]">LevelUp </span>
           </h1>
 
-          <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed font-medium mb-12 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
+          <p className="text-lg md:text-xl bg-black/80 rounded-md text-white/80 max-w-2xl mx-auto leading-relaxed font-medium mb-12 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300">
             The Premium platform where learning meets gamification. Master Software Engineering, AI, and DevOps through structured roadmaps and real-world XP.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
             <Link
               href="/home"
-              className="group h-16 px-10 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-gray-800 transition-all shadow-2xl shadow-black/20"
+              className="group h-16 px-10 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:scale-105 transition-all shadow-2xl shadow-white/10"
             >
               Start Free Journey
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
 
-            <button className="h-16 px-10 border-2 border-black/10 text-black rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-black hover:text-white transition-all">
+            <button className="h-16 px-10 border-2 border-black/80 hover:bg-[#CFAB0C] text-black rounded-2xl font-black uppercase tracking-widest text-xs bg-white hover:text-black transition-all">
               Watch Demo
             </button>
           </div>
-          
-      
         </div>
       </section>
+
 
       {/* CORE CAPABILITIES */}
       <section className="py-32 px-6 bg-gray-50/50">
@@ -76,27 +76,31 @@ const Landing = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <FeatureCard 
               icon={<Bot className="w-6 h-6" />}
-              title="Study Buddy"
+              title="AI Study Buddy"
               desc="Context-aware AI that understands your current roadmap topic and provides instant guidance."
               color="bg-gray-50 text-black"
+              bgImage="/featurecard.jpg"
             />
             <FeatureCard 
               icon={<Users className="w-6 h-6" />}
               title="Career Hub"
               desc="AI-driven mock interviews and peer code reviews ensuring you're industry-ready."
               color="bg-gray-50 text-black"
+              bgImage="/featurecard.jpg"
             />
             <FeatureCard 
               icon={<TrendingUp className="w-6 h-6" />}
               title="Gamified Growth"
               desc="Earn XP, climb leaderboards, and unlock badges as you conquer complex milestones."
               color="bg-gray-50 text-black"
+              bgImage="/featurecard.jpg"
             />
             <FeatureCard 
               icon={<Award className="w-6 h-6" />}
               title="Portfolio Gen"
               desc="Auto-generate a professional engineer's portfolio as you progress through tasks."
               color="bg-gray-50 text-black"
+              bgImage="/featurecard.jpg"
             />
           </div>
         </div>
@@ -105,20 +109,20 @@ const Landing = () => {
       {/* STATS BREAK */}
       <section className="py-24 px-6 border-y border-black/5">
          <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12">
-            <div className="text-center md:text-left">
-               <h4 className="text-4xl font-black text-black mb-1">24.5k+</h4>
+            <div className="text-center md:text-left md:pl-24">
+               <h4 className="text-4xl font-black text-black mb-1 tracking-tighter">24.5k+</h4>
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Learners</p>
             </div>
-            <div className="text-center md:text-left">
-               <h4 className="text-4xl font-black text-black mb-1">890k</h4>
+            <div className="text-center md:text-left md:pl-24">
+               <h4 className="text-4xl font-black text-black mb-1 tracking-tighter">890k</h4>
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Topics Mastered</p>
             </div>
-            <div className="text-center md:text-left">
-               <h4 className="text-4xl font-black text-black mb-1">4.9/5</h4>
+            <div className="text-center md:text-left md:pl-24">
+               <h4 className="text-4xl font-black text-black mb-1 tracking-tighter">4.9/5</h4>
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Growth Rating</p>
             </div>
-            <div className="text-center md:text-left">
-               <h4 className="text-4xl font-black text-black mb-1">$0.00</h4>
+            <div className="text-center md:text-left md:pl-24">
+               <h4 className="text-4xl font-black text-black mb-1 tracking-tighter">$0.00</h4>
                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cost to Start</p>
             </div>
          </div>
@@ -176,24 +180,27 @@ const Landing = () => {
       </section>
 
       {/* CTA (Call To Action) */}
-      <section className="py-40 px-6 bg-black flex flex-col items-center justify-center text-center overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-           <div className="w-[800px] h-[800px] bg-white rounded-full blur-[200px] -ml-96 -mt-96" />
-        </div>
-
+      <section className="py-40 px-6 flex flex-col items-center justify-center text-center overflow-hidden relative min-h-[60vh]">
+        {/* BACKGROUND IMAGE WITH OVERLAY */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10s] hover:scale-110"
+          style={{ backgroundImage: "url('/bg.avif')" }}
+        />
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] transition-all duration-1000" />
+        
         <div className="relative z-10 max-w-4xl">
-          <h2 className="text-5xl md:text-7xl font-black text-white mb-8">
+          <h2 className="text-5xl md:text-7xl font-black text-white mb-8 leading-[1.1] tracking-tighter">
             Ready To Join The <br />
-            <span className="text-[#ceab0d]">ENGINEERING ELITE?</span>
+            <span className="text-[#ceab0d] drop-shadow-[0_0_30px_rgba(206,171,13,0.3)]">ENGINEERING ELITE?</span>
           </h2>
 
-          <p className="text-lg text-white/60 max-w-2xl mx-auto leading-relaxed font-medium mb-12">
+          <p className="text-lg text-white/70 max-w-2xl mx-auto leading-relaxed font-medium mb-12">
             No credit card, no complex onboarding. Just select your path and start growing into the engineer you want to become.
           </p>
 
           <Link
             href="/home"
-            className="inline-flex h-16 px-12 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-xs items-center gap-3 hover:scale-105 transition-all"
+            className="inline-flex h-16 px-12 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-xs items-center gap-3 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-white/10"
           >
             Start Your Evolution →
           </Link>
@@ -203,20 +210,38 @@ const Landing = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc, color }) => (
-  <div className="group relative bg-white p-6 rounded-[32px] border-2 border-black shadow-sm hover:shadow-2xl hover:shadow-black/10 hover:-translate-y-2 transition-all duration-500 flex flex-col h-full overflow-hidden">
-    <div className={`w-16 h-16 ${color} group-hover:bg-black group-hover:text-white rounded-[22px] flex items-center justify-center mb-10 font-bold group-hover:scale-110 transition-all duration-500 shadow-sm border border-black/5`}>
+
+const FeatureCard = ({ icon, title, desc, color, bgImage }) => (
+  <div className="group relative bg-white p-10 rounded-[40px] border-2 border-black shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-700 flex flex-col h-full overflow-hidden">
+    {/* HOVER BACKGROUND */}
+    {bgImage && (
+      <>
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-[2s] scale-125 group-hover:scale-100 opacity-0 group-hover:opacity-100"
+          style={{ backgroundImage: `url('${bgImage}')` }}
+        />
+        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      </>
+    )}
+    
+    <div className={`relative z-10 w-16 h-16 ${color} group-hover:bg-white group-hover:text-black rounded-[24px] flex items-center justify-center mb-12 font-bold group-hover:scale-110 transition-all duration-700 shadow-sm border border-black/5`}>
       {icon}
     </div>
     
-    <h3 className="text-2xl font-black text-black mb-4 tracking-tight">{title}</h3>
+    <h3 className="relative z-10 text-2xl font-black text-black group-hover:text-white mb-4 tracking-tight transition-colors duration-500">{title}</h3>
     
-    <p className="text-[15px] font-medium text-gray-600 leading-relaxed mb-10 flex-1">
+    <p className="relative z-10 text-[15px] font-medium text-gray-600 group-hover:text-white/80 leading-relaxed mb-10 flex-1 transition-colors duration-500">
       {desc}
     </p>
-    
+
+    <div className="relative z-10 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-700">
+      <div className="flex items-center gap-2 text-[10px] font-black text-white uppercase tracking-widest">
+         Initialize Module <ArrowRight className="w-3 h-3 text-[#ceab0d]" />
+      </div>
+    </div>
   </div>
 );
+
 
 const CheckCircle = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">

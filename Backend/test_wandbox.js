@@ -1,0 +1,1 @@
+fetch('https://wandbox.org/api/compile.json', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ compiler: 'cpython-3.10.6', code: 'print(1)' })}).then(r=>r.json()).then(console.log);

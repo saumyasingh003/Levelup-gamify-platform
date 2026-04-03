@@ -9,36 +9,39 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
  * Robust AI Caller with Exponential Backoff + Model Fallback
  */
 const callAILayer = async (taskFn, customSystemInstruction = null, generationConfig = {}) => {
-  const models = ["gemini-2.5-flash", "gemini-3-flash", "gemini-1.5-flash"];
+  const models = [
+    "gemini-3.1-pro",
+    "gemini-3.1-flash",
+    "gemini-3-flash",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash"
+  ];
   let lastError;
 
   for (const modelName of models) {
-    for (let attempt = 0; attempt <= 2; attempt++) {
+    for (let attempt = 0; attempt <= 1; attempt++) {
       try {
         const config = { model: modelName };
         if (customSystemInstruction) config.systemInstruction = customSystemInstruction;
-        
         const modelInstance = genAI.getGenerativeModel(config, { generationConfig });
-        
         return await taskFn(modelInstance);
       } catch (error) {
         lastError = error;
-        const isRateLimit = error.message?.includes("429") || error.message?.includes("quota") || error.message?.includes("exhausted");
+        const errMsg = error.message?.toLowerCase() || "";
+        const isRetryable = errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("rate") || errMsg.includes("overloaded");
         
-        if (isRateLimit && attempt < 2) {
-          const delay = Math.pow(2, attempt) * 1000;
-          console.warn(`[Reliability] ${modelName} rate limited. Attempt ${attempt + 1}. Retrying in ${delay}ms...`);
-          await new Promise(r => setTimeout(r, delay));
+        if (isRetryable && attempt < 1) {
+          await new Promise(r => setTimeout(r, 1000));
           continue;
         }
         
-        // If it's a model-not-found or persistent rate limit, fail over to the next model
-        if (isRateLimit || error.message?.includes("not found") || error.message?.includes("404")) {
-          console.warn(`[Reliability] ${modelName} failed. Switching to next model if available...`);
-          break; // Break inner loop to try next model
+        if (isRetryable || errMsg.includes("not found") || errMsg.includes("404") || errMsg.includes("permission") || errMsg.includes("api key")) {
+          console.warn(`[Reliability] ${modelName} error: ${error.message}. Trying fallback...`);
+          break; 
         }
-        
-        throw error; // Other errors (Safety, Auth, etc) should fail fast
+        throw error;
       }
     }
   }
@@ -135,52 +138,85 @@ export const generateQuiz = async (req, res) => {
   }
 };
 
-/**
- * Mock Interview Assistant
- */
+
+// Mock Interview Assistant
 export const mockInterview = async (req, res) => {
   const { career, history, resume, audioData, audioMimeType } = req.body;
-  console.log(`[Interview] Session for user ${req.user?._id} in domain: ${career}. Audio: ${!!audioData}`);
+
   try {
     const questionCount = history ? history.filter(h => h.role === 'model').length : 0;
     const safeResume = resume && resume.length > 15000 ? resume.substring(0, 15000) + "..." : resume;
 
-    const systemInstruction = `You are an elite, professional Tech Interviewer conducting a mock interview for the role: ${career}.
-${safeResume ? `\nCandidate's Resume:\n${safeResume}\n` : ""}
-RULES:
-1. Conduct exactly 10 high-quality technical and behavioral questions.
-2. Introduce yourself briefly and ask Question #1 immediately.
-3. Keep each response under 80 words—conversational and direct.
-4. Ask exactly ONE question at a time. Anchor questions in their resume.
-5. After candidate answers Question #10, provide ONLY the evaluation JSON.
-6. For every turn where audio is provided, you MUST start your response with "Transcript: [their words]" followed by "Response: [your question]".
-7. If no clear speech is in the audio, use "Transcript: [Unintelligible/Silence]".
+    const systemInstruction = `
+You are a professional AI Tech Interviewer for the role: ${career || "Software Engineer"}.
 
-EVALUATION JSON:
+CONTEXT:
+Candidate's Resume: ${safeResume || "No resume provided"}
+
+PROTOCOL:
+1. Question #1: Request a professional introduction.
+2. Question #2-9: Deep dive into the technologies mentioned in the resume or previous answer.
+3. Question #10: Final behavioral/career question.
+4. Escalation: Increase technical complexity with each turn (Entry -> Mid -> Senior).
+
+GUIDELINES:
+- Ask exactly ONE clear question at a time.
+- Keep responses compact (50 words max).
+- If you have enough info after 10 questions, return the evaluation JSON.
+- Never repeat "Introduce yourself" if the history shows it was already done.
+
+CRITICAL - AUDIO TRANSCRIPTION:
+If the user's input contains audio, you MUST transcribe exactly what they said. Use this format:
+Transcript: [exact words from audio]
+Response: [your next interview question]
+
+EVALUATION JSON (ONLY after turn 10):
 {
-  "overallScore": <0-100>,
-  "scores": {"confidence": <0-100>, "clarity": <0-100>, "technicalSkills": <0-100>, "problemSolving": <0-100>},
+  "overallScore": 0-100,
   "feedback": "summary",
   "strengths": ["list"],
   "improvements": ["list"]
 }
 `;
-
     const resultData = await callAILayer(async (model) => {
-      let chatHistory = history && history.length > 1 ? history.slice(0, -1) : [];
-      
-      // Sanitization: history must start with 'user'
-      if (chatHistory.length > 0 && chatHistory[0].role === 'model') {
-        chatHistory = chatHistory.slice(1);
+      // Robust Gemini History Alignment (MUST alternate user/model)
+      let chatHistory = [];
+      let expectedRole = "user";
+
+      if (history && history.length > 0) {
+        const historyMinusLatest = history.slice(0, -1);
+        
+        // If the first message in our app's history is the AI's opening question,
+        // we MUST pad the beginning with a dummy user message for Gemini.
+        if (historyMinusLatest.length > 0 && historyMinusLatest[0].role === "model") {
+           chatHistory.push({ role: "user", parts: [{ text: "I am ready. Please begin the interview." }] });
+           expectedRole = "model";
+        }
+
+        for (const msg of historyMinusLatest) {
+           if (msg.role === expectedRole) {
+              chatHistory.push(msg);
+              expectedRole = expectedRole === "user" ? "model" : "user";
+           }
+        }
       }
 
-      const chat = model.startChat({ history: chatHistory });
-      
-      const currentMessageText = history && history.length > 0
-        ? history[history.length - 1].parts[0].text
-        : "Start the interview. Introduce yourself briefly and ask Question #1.";
+      const chat = model.startChat({ 
+        history: chatHistory,
+        generationConfig: { maxOutputTokens: 800, temperature: 0.7 }
+      });
 
-      const parts = [{ text: currentMessageText }];
+      const lastUserText = history && history.length > 0 
+        ? history[history.length - 1].parts[0].text 
+        : "Start interview";
+
+      // Inject stage context into the current prompt to guide progression
+      const stageContext = questionCount === 0 
+        ? "INSTRUCTION: Begin the interview with a welcoming introduction request."
+        : `INSTRUCTION: This is Question #${questionCount + 1}. You MUST ask a technical question directly related to their previous answer or resume. DO NOT ask them to introduce themselves again.`;
+
+      const parts = [{ text: `${stageContext}\n\nCandidate Input: ${lastUserText || "[Silence]"}` }];
+
       if (audioData) {
         parts.push({
           inlineData: {
@@ -191,58 +227,53 @@ EVALUATION JSON:
       }
 
       const result = await chat.sendMessage(parts);
-      const text = (await result.response).text().trim();
-      
-      // Evaluation Phase
-      if (questionCount >= 10 || text.includes('"overallScore"')) {
-        const jsonMatch = text.match(/\{[\s\S]*"overallScore"[\s\S]*\}/);
+      const rawText = (await result.response).text().trim();
+
+      // Evaluation parsing
+      if (questionCount >= 10 || rawText.includes('"overallScore"')) {
+        const jsonMatch = rawText.match(/\{[\s\S]*"overallScore"[\s\S]*\}/);
         if (jsonMatch) return { evaluation: JSON.parse(jsonMatch[0]) };
-        
-        // Force evaluation if needed
-        if (questionCount >= 10) {
-           const evalMsg = await chat.sendMessage("The interview is complete. Provide ONLY the evaluation JSON object.");
-           const evalText = (await evalMsg.response).text().trim();
-           const evalJson = evalText.match(/\{[\s\S]*"overallScore"[\s\S]*\}/);
-           if (evalJson) return { evaluation: JSON.parse(evalJson[0]) };
-        }
       }
-      
+
       // Parsing Transcript vs Response
-      let processedResponse = text;
+      let processedResponse = rawText;
       let transcript = null;
 
-      if (text.includes("Transcript:") && text.includes("Response:")) {
-        const parts = text.split("Response:");
-        transcript = parts[0].replace("Transcript:", "").trim();
-        processedResponse = parts[1].trim();
+      const transcriptMatch = rawText.match(/Transcript:\s*([\s\S]*?)(?:Response:|$)/i);
+      const responseMatch = rawText.match(/Response:\s*([\s\S]*)/i);
+
+      if (transcriptMatch) transcript = transcriptMatch[1].trim();
+      if (responseMatch) processedResponse = responseMatch[1].trim();
+
+      // Ensure the "Transcript: [Audio Transmission]" in UI is replaced if we have a real transcript
+      if (audioData && !transcript && !rawText.toLowerCase().includes("transcript:")) {
+         transcript = "[Transcribing...]"; // Handled by standard response if needed
       }
 
-      return { response: processedResponse, transcript: transcript };
+      return { response: processedResponse, transcript };
     }, systemInstruction);
 
-    // Xp awarding if evaluation exists
+    // XP awarding if evaluation exists
     if (resultData.evaluation) {
-      const progress = await Progress.findOne({ user: req.user._id });
-      if (progress) {
-        const awardedXp = Math.round(200 * (progress.streakMultiplier || 1));
-        progress.xp += awardedXp;
-        progress.skills.softSkills = (progress.skills.softSkills || 0) + 5;
-        await progress.save();
-        resultData.evaluation.awardedXp = awardedXp;
+      if (req.user && req.user._id) {
+        const progress = await Progress.findOne({ user: req.user._id });
+        if (progress) {
+          const awardedXp = Math.round(200 * (progress.streakMultiplier || 1));
+          progress.xp += awardedXp;
+          progress.skills.softSkills = (progress.skills.softSkills || 0) + 5;
+          await progress.save();
+          resultData.evaluation.awardedXp = awardedXp;
+        }
       }
-      return res.status(200).json({ success: true, evaluation: resultData.evaluation });
     }
-
-    return res.status(200).json({ 
-      success: true, 
-      response: resultData.response, 
-      transcript: resultData.transcript 
-    });
+    
+    return res.status(200).json({ success: true, ...resultData });
 
   } catch (error) {
     console.error("🔥 Interview Error:", error.message);
-    const msgMap = { 429: "AI rate limit reached.", SAFETY: "Safety filters triggered." };
-    const userMessage = msgMap[error.message?.includes("429") ? 429 : "DEFAULT"] || "Interview service error.";
-    res.status(500).json({ success: false, message: userMessage });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message?.includes("Safety") ? "Safety filters triggered." : "Interview service unavailable."
+    });
   }
 };
